@@ -1334,7 +1334,8 @@ header h1 {
   .actions-nav {
     flex-wrap: wrap;
     justify-content: center;
-    width: 280px;
+    max-width: 280px;
+    width: auto;
     padding: 10px 16px;
     gap: 8px;
     border-radius: 20px;

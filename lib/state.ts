@@ -24,18 +24,23 @@ export const useSettings = create<{
   model: string;
   voice: string;
   language: string;
+  systemPrompt: string;
   setModel: (model: string) => void;
   setVoice: (voice: string) => void;
   setLanguage: (language: string) => void;
+  setSystemPrompt: (prompt: string) => void;
 }>(
   persist(
     set => ({
       model: DEFAULT_LIVE_API_MODEL,
       voice: DEFAULT_VOICE,
       language: AVAILABLE_LANGUAGES[0],
+      systemPrompt:
+        "Your sole task is to translate the user's speech into {language}. Do not add any extra commentary, greetings, or explanations. Provide only the direct translation.",
       setModel: model => set({ model }),
       setVoice: voice => set({ voice }),
       setLanguage: language => set({ language }),
+      setSystemPrompt: systemPrompt => set({ systemPrompt }),
     }),
     {
       name: 'zoom-settings-storage',

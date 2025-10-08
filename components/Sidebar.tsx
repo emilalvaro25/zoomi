@@ -14,12 +14,15 @@ export default function Sidebar() {
   const {
     voice: savedVoice,
     language: savedLanguage,
+    systemPrompt: savedSystemPrompt,
     setVoice,
     setLanguage,
+    setSystemPrompt,
   } = useSettings();
   const { connected } = useLiveAPIContext();
   const [voice, setLocalVoice] = useState(savedVoice);
   const [language, setLocalLanguage] = useState(savedLanguage);
+  const [systemPrompt, setLocalSystemPrompt] = useState(savedSystemPrompt);
   const [isDirty, setIsDirty] = useState(false);
   const [showSaved, setShowSaved] = useState(false);
 
@@ -28,16 +31,29 @@ export default function Sidebar() {
     if (isSidebarOpen) {
       setLocalVoice(savedVoice);
       setLocalLanguage(savedLanguage);
+      setLocalSystemPrompt(savedSystemPrompt);
     }
-  }, [isSidebarOpen, savedVoice, savedLanguage]);
+  }, [isSidebarOpen, savedVoice, savedLanguage, savedSystemPrompt]);
 
   useEffect(() => {
-    setIsDirty(voice !== savedVoice || language !== savedLanguage);
-  }, [voice, language, savedVoice, savedLanguage]);
+    setIsDirty(
+      voice !== savedVoice ||
+        language !== savedLanguage ||
+        systemPrompt !== savedSystemPrompt,
+    );
+  }, [
+    voice,
+    language,
+    systemPrompt,
+    savedVoice,
+    savedLanguage,
+    savedSystemPrompt,
+  ]);
 
   const handleSave = () => {
     setVoice(voice);
     setLanguage(language);
+    setSystemPrompt(systemPrompt);
     setShowSaved(true);
     const timer = setTimeout(() => setShowSaved(false), 2000);
     return () => clearTimeout(timer);
@@ -56,8 +72,19 @@ export default function Sidebar() {
           <div className="sidebar-section">
             <fieldset disabled={connected}>
               <label>
+                System Prompt
+                <textarea
+                  value={systemPrompt}
+                  onChange={e => setLocalSystemPrompt(e.target.value)}
+                  rows={5}
+                />
+              </label>
+              <label>
                 Voice
-                <select value={voice} onChange={e => setLocalVoice(e.target.value)}>
+                <select
+                  value={voice}
+                  onChange={e => setLocalVoice(e.target.value)}
+                >
                   {AVAILABLE_VOICES.map(v => (
                     <option key={v} value={v}>
                       {v}
@@ -85,7 +112,9 @@ export default function Sidebar() {
             <StreamingConsole />
           </div>
           <div className="sidebar-footer">
-            {showSaved && <span className="saved-message">Settings saved!</span>}
+            {showSaved && (
+              <span className="saved-message">Settings saved!</span>
+            )}
             <button
               className="save-button"
               onClick={handleSave}

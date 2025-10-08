@@ -49,13 +49,13 @@ const renderContent = (text: string) => {
 
 export default function StreamingConsole() {
   const { client, setConfig } = useLiveAPIContext();
-  const { voice, language } = useSettings();
+  const { voice, language, systemPrompt } = useSettings();
   const turns = useLogStore(state => state.turns);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   // Set the configuration for the Live API
   useEffect(() => {
-    const fullSystemPrompt = `Your sole task is to translate the user's speech into ${language}. Do not add any extra commentary, greetings, or explanations. Provide only the direct translation.`;
+    const fullSystemPrompt = systemPrompt.replace('{language}', language);
 
     // Using `any` for config to accommodate `speechConfig`, which is not in the
     // current TS definitions but is used in the working reference example.
@@ -81,7 +81,7 @@ export default function StreamingConsole() {
     };
 
     setConfig(config);
-  }, [setConfig, voice, language]);
+  }, [setConfig, voice, language, systemPrompt]);
 
   useEffect(() => {
     const { addTurn, updateLastTurn } = useLogStore.getState();
