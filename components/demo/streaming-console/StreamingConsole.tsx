@@ -9,7 +9,6 @@ import { useLiveAPIContext } from '../../../contexts/LiveAPIContext';
 import {
   useSettings,
   useLogStore,
-  useTools,
   ConversationTurn,
 } from '@/lib/state';
 import { LiveServerContent } from '@google/genai';
@@ -50,26 +49,13 @@ const renderContent = (text: string) => {
 
 export default function StreamingConsole() {
   const { client, setConfig } = useLiveAPIContext();
-  const { systemPrompt, voice, language } = useSettings();
-  const { tools } = useTools();
+  const { voice, language } = useSettings();
   const turns = useLogStore(state => state.turns);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   // Set the configuration for the Live API
   useEffect(() => {
-    const enabledTools = tools
-      .filter(tool => tool.isEnabled)
-      .map(tool => ({
-        functionDeclarations: [
-          {
-            name: tool.name,
-            description: tool.description,
-            parameters: tool.parameters,
-          },
-        ],
-      }));
-
-    const fullSystemPrompt = `${systemPrompt} Your sole task is to translate the user's speech into ${language}. Do not add any extra commentary, greetings, or explanations. Provide only the direct translation.`;
+    const fullSystemPrompt = `Your sole task is to translate the user's speech into ${language}. Do not add any extra commentary, greetings, or explanations. Provide only the direct translation.`;
 
     // Using `any` for config to accommodate `speechConfig`, which is not in the
     // current TS definitions but is used in the working reference example.
@@ -91,11 +77,11 @@ export default function StreamingConsole() {
           },
         ],
       },
-      tools: enabledTools,
+      tools: [],
     };
 
     setConfig(config);
-  }, [setConfig, systemPrompt, tools, voice, language]);
+  }, [setConfig, voice, language]);
 
   useEffect(() => {
     const { addTurn, updateLastTurn } = useLogStore.getState();

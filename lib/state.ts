@@ -4,10 +4,6 @@
 */
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { virtualProductionTools } from './tools';
-import { customerSupportTools } from './tools/customer-support';
-import { navigationSystemTools } from './tools/navigation-system';
-import { personalAssistantTools } from './tools/personal-assistant';
 
 import {
   DEFAULT_LIVE_API_MODEL,
@@ -25,22 +21,18 @@ import { supabase } from './supabase';
  * Settings
  */
 export const useSettings = create<{
-  systemPrompt: string;
   model: string;
   voice: string;
   language: string;
-  setSystemPrompt: (prompt: string) => void;
   setModel: (model: string) => void;
   setVoice: (voice: string) => void;
   setLanguage: (language: string) => void;
 }>(
   persist(
     set => ({
-      systemPrompt: `You are a real-time, multilingual translator.`,
       model: DEFAULT_LIVE_API_MODEL,
       voice: DEFAULT_VOICE,
       language: AVAILABLE_LANGUAGES[0],
-      setSystemPrompt: prompt => set({ systemPrompt: prompt }),
       setModel: model => set({ model }),
       setVoice: voice => set({ voice }),
       setLanguage: language => set({ language }),
@@ -113,58 +105,6 @@ export type Template =
   | 'customer-support'
   | 'personal-assistant'
   | 'navigation-system';
-
-const toolTemplates: Record<Template, FunctionCall[]> = {
-  'customer-support': customerSupportTools,
-  'personal-assistant': personalAssistantTools,
-  'navigation-system': navigationSystemTools,
-};
-
-export const useTools = create<{
-  tools: FunctionCall[];
-  template?: Template;
-  setTemplate: (template: Template) => void;
-  toggleTool: (name: string) => void;
-  addTool: () => void;
-  removeTool: (name: string) => void;
-  updateTool: (name: string, updatedTool: FunctionCall) => void;
-}>((set, get) => ({
-  tools: [],
-  template: undefined,
-  setTemplate: template =>
-    set({
-      template,
-      tools: toolTemplates[template],
-    }),
-  toggleTool: name =>
-    set(state => ({
-      tools: state.tools.map(tool =>
-        tool.name === name ? { ...tool, isEnabled: !tool.isEnabled } : tool,
-      ),
-    })),
-  addTool: () =>
-    set(state => ({
-      tools: [
-        ...state.tools,
-        {
-          name: `new_function_${state.tools.length + 1}`,
-          description: '',
-          parameters: { type: 'OBJECT', properties: {} },
-          isEnabled: false,
-        },
-      ],
-    })),
-  removeTool: name =>
-    set(state => ({
-      tools: state.tools.filter(tool => tool.name !== name),
-    })),
-  updateTool: (name, updatedTool) =>
-    set(state => ({
-      tools: state.tools.map(tool =>
-        tool.name === name ? updatedTool : tool,
-      ),
-    })),
-}));
 
 /**
  * Logs

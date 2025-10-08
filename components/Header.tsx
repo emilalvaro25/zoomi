@@ -27,9 +27,7 @@ export default function Header() {
         >
           <span className="icon">group</span>
         </button>
-        <div className="header-text">
-          <h1>Zoomi</h1>
-        </div>
+        <h1>Zoomi</h1>
       </div>
       <div className="header-right">
         {session && (

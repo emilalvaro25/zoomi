@@ -5,7 +5,7 @@
 
 import React from 'react';
 import './WelcomeScreen.css';
-import { useTools, Template } from '../../../lib/state';
+import { Template } from '../../../lib/state';
 
 const welcomeContent: Record<Template, { title: string; description: string; prompts: string[] }> = {
   'customer-support': {
@@ -38,7 +38,7 @@ const welcomeContent: Record<Template, { title: string; description: string; pro
 };
 
 const WelcomeScreen: React.FC = () => {
-  const { template, setTemplate } = useTools();
+  const [template, setTemplate] = React.useState<Template>('customer-support');
   const { title, description, prompts } = welcomeContent[template];
   return (
     <div className="welcome-screen">

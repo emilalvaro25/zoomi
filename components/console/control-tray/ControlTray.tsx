@@ -24,7 +24,6 @@ import { memo, ReactNode, useEffect, useRef, useState } from 'react';
 import { AudioRecorder } from '../../../lib/audio-recorder';
 import {
   useSettings,
-  useTools,
   useLogStore,
   useUI,
   useCameraState,
@@ -97,16 +96,13 @@ function ControlTray({ children }: ControlTrayProps) {
   };
 
   const handleExportLogs = () => {
-    const { systemPrompt, model } = useSettings.getState();
-    const { tools } = useTools.getState();
+    const { model } = useSettings.getState();
     const { turns } = useLogStore.getState();
 
     const logData = {
       configuration: {
         model,
-        systemPrompt,
       },
-      tools,
       conversation: turns.map(turn => ({
         ...turn,
         timestamp: turn.timestamp.toISOString(),
