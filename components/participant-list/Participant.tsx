@@ -10,12 +10,29 @@ interface ParticipantProps {
   participant: ParticipantType;
 }
 
-// FIX: Refactored component to use `React.FC` to correctly handle React-specific props like `key`.
+// Simple hash function to generate a color from a string
+const nameToColor = (name: string) => {
+  let hash = 0;
+  for (let i = 0; i < name.length; i++) {
+    hash = name.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  const color = `hsl(${hash % 360}, 50%, 40%)`;
+  return color;
+};
+
 const Participant: React.FC<ParticipantProps> = ({ participant }) => {
+  const initial = participant.name
+    ? participant.name.charAt(0).toUpperCase()
+    : '?';
+  const avatarColor = nameToColor(participant.uid);
+
   return (
     <li className="participant-item">
-      <div className="participant-avatar">
-        <span className="icon">person</span>
+      <div
+        className="participant-avatar"
+        style={{ backgroundColor: avatarColor }}
+      >
+        <span>{initial}</span>
       </div>
       <div className="participant-info">
         <span className="participant-name" title={participant.name}>

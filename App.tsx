@@ -27,7 +27,6 @@ import {
   useUI,
   useParticipantStore,
 } from './lib/state';
-import WebcamView from './components/demo/webcam-view/WebcamView';
 import { useEffect } from 'react';
 import ParticipantList from './components/participant-list/ParticipantList';
 import JoinScreen from './components/onboarding/JoinScreen';
@@ -37,6 +36,7 @@ import Sidebar from './components/Sidebar';
 import { supabase } from './lib/supabase';
 import { useAuth } from './lib/auth';
 import AuthScreen from './components/onboarding/AuthScreen';
+import MeetingGrid from './components/meeting-grid/MeetingGrid';
 
 const API_KEY = process.env.API_KEY as string;
 if (typeof API_KEY !== 'string') {
@@ -185,9 +185,7 @@ function App() {
           <div className="streaming-console">
             <main>
               <div className="main-app-area">
-                <div className="webcam-container">
-                  <WebcamView />
-                </div>
+                <MeetingGrid />
                 <SubtitleOverlay />
               </div>
 

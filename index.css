@@ -280,7 +280,7 @@ button .icon {
   align-items: center;
   justify-content: center;
   gap: 20px;
-  padding: 20px;
+  padding: 0;
   width: 100%;
   height: 100%;
   padding-bottom: 120px; /* Space for control tray */
@@ -745,19 +745,6 @@ button .icon {
 
 .grounding-chunks a:hover {
   text-decoration: underline;
-}
-
-.webcam-container {
-  flex-grow: 1;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  position: relative;
-  border-radius: 16px;
-  overflow: hidden;
-  border: 1px solid var(--border-stroke);
-  height: 100%;
-  min-width: 400px;
 }
 
 .light-overlay {
@@ -1314,10 +1301,6 @@ header h1 {
 
   .user-info span {
     display: none;
-  }
-
-  .webcam-container {
-    min-width: 0;
   }
 
   .streaming-console .main-app-area {

@@ -180,6 +180,7 @@ export const useParticipantStore = create<{
   removeParticipant: (uid: string) => void;
   setMuted: (uid: string, isMuted: boolean) => Promise<void>;
   setCameraOff: (uid: string, isCameraOff: boolean) => Promise<void>;
+  setAllMuted: (isMuted: boolean) => Promise<void>;
 }>((set, get) => ({
   participants: [],
   localParticipantId: null,
@@ -252,6 +253,30 @@ export const useParticipantStore = create<{
         .from('participants')
         .update({ is_camera_off: isCameraOff })
         .eq('uid', uid);
+    }
+  },
+  setAllMuted: async (isMuted: boolean) => {
+    const localParticipantId = get().localParticipantId;
+    if (!localParticipantId) {
+      console.error('Local participant not found. Cannot perform mute all.');
+      return;
+    }
+
+    // Optimistic UI update
+    set(state => ({
+      participants: state.participants.map(p =>
+        p.isLocal ? p : { ...p, isMuted },
+      ),
+    }));
+
+    const { error } = await supabase
+      .from('participants')
+      .update({ is_muted: isMuted })
+      .neq('uid', localParticipantId);
+
+    if (error) {
+      console.error('Error muting/unmuting all participants:', error);
+      // If there's an error, the realtime subscription will eventually correct the state.
     }
   },
 }));

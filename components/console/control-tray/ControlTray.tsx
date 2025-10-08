@@ -43,9 +43,14 @@ function ControlTray({ children }: ControlTrayProps) {
   const connectButtonRef = useRef<HTMLButtonElement>(null);
   const { isFullScreen, toggleFullScreen } = useUI();
   const { effect, setEffect } = useCameraState();
-  const { localParticipantId, setMuted: setParticipantMuted } =
-    useParticipantStore();
+  const {
+    localParticipantId,
+    setMuted: setParticipantMuted,
+    participants,
+    setAllMuted,
+  } = useParticipantStore();
   const [showEffects, setShowEffects] = useState(false);
+  const [isAllMuted, setIsAllMuted] = useState(false);
 
   const {
     client,
@@ -55,6 +60,16 @@ function ControlTray({ children }: ControlTrayProps) {
     toggleVideo,
     videoEnabled,
   } = useLiveAPIContext();
+
+  useEffect(() => {
+    const remoteParticipants = participants.filter(p => !p.isLocal);
+    if (remoteParticipants.length === 0) {
+      setIsAllMuted(false);
+      return;
+    }
+    const allRemotesMuted = remoteParticipants.every(p => p.isMuted);
+    setIsAllMuted(allRemotesMuted);
+  }, [participants]);
 
   useEffect(() => {
     if (!connected && connectButtonRef.current) {
@@ -93,6 +108,11 @@ function ControlTray({ children }: ControlTrayProps) {
     if (connected) {
       setMuted(!muted);
     }
+  };
+
+  const handleMuteAllToggle = () => {
+    const newMutedState = !isAllMuted;
+    setAllMuted(newMutedState);
   };
 
   const handleExportLogs = () => {
@@ -142,6 +162,10 @@ function ControlTray({ children }: ControlTrayProps) {
   const fullScreenButtonTitle = isFullScreen
     ? 'Exit full screen'
     : 'Enter full screen';
+  const muteAllButtonTitle = isAllMuted
+    ? 'Unmute all participants'
+    : 'Mute all participants';
+  const remoteParticipantsExist = participants.some(p => !p.isLocal);
 
   return (
     <section className={cn('control-tray', { 'full-screen': isFullScreen })}>
@@ -167,6 +191,24 @@ function ControlTray({ children }: ControlTrayProps) {
             {videoEnabled ? 'videocam' : 'videocam_off'}
           </span>
         </button>
+        {remoteParticipantsExist && (
+          <button
+            className={cn('action-button')}
+            onClick={handleMuteAllToggle}
+            title={muteAllButtonTitle}
+            disabled={!connected}
+          >
+            {isAllMuted ? (
+              <span className="material-symbols-outlined filled">
+                record_voice_over
+              </span>
+            ) : (
+              <span className="material-symbols-outlined filled">
+                voice_over_off
+              </span>
+            )}
+          </button>
+        )}
         <div className="control-group">
           <button
             className={cn('action-button', { active: showEffects })}

@@ -20,12 +20,14 @@
   width: 40px;
   height: 40px;
   border-radius: 50%;
-  background-color: var(--Neutral-30);
+  /* background-color is now set inline */
   display: flex;
   justify-content: center;
   align-items: center;
   color: var(--Neutral-90);
   flex-shrink: 0;
+  font-weight: bold;
+  font-size: 18px;
 }
 
 .participant-avatar .icon {

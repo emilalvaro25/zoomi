@@ -30,17 +30,18 @@ const JoinScreen: React.FC = () => {
       // Request permissions
       await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
 
-      const { error: insertError } = await supabase.from('participants').insert([
+      const { error: upsertError } = await supabase.from('participants').upsert(
         {
           uid,
           name,
           is_muted: true,
           is_camera_off: true,
         },
-      ]);
+        { onConflict: 'uid' },
+      );
 
-      if (insertError) {
-        throw new Error(insertError.message);
+      if (upsertError) {
+        throw new Error(upsertError.message);
       }
 
       // Add participant and join

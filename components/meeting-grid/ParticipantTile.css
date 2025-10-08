@@ -1,0 +1,58 @@
+.participant-tile {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  background-color: var(--Neutral-5);
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1px solid var(--border-stroke);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  color: var(--Neutral-80);
+}
+
+.participant-tile .webcam-view {
+  /* Ensure WebcamView fills the tile */
+  width: 100%;
+  height: 100%;
+  border-radius: 0;
+  border: none;
+}
+
+.participant-placeholder {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 16px;
+  width: 100%;
+  height: 100%;
+}
+
+.participant-placeholder .avatar-icon {
+  font-size: 80px;
+  color: var(--Neutral-50);
+}
+
+.participant-name-overlay {
+  position: absolute;
+  bottom: 8px;
+  left: 8px;
+  background-color: rgba(0, 0, 0, 0.6);
+  padding: 4px 10px;
+  border-radius: 8px;
+  font-size: 14px;
+  color: var(--Neutral-90);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.participant-name-overlay .icon {
+  font-size: 18px;
+}
+
+.participant-name-overlay .icon.muted {
+  color: var(--Red-400);
+}

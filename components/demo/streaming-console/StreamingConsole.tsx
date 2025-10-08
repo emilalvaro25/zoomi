@@ -173,10 +173,10 @@ export default function StreamingConsole() {
         {turns.length === 0 ? (
           <div className="empty-console-message">
             <span className="icon">translate</span>
-            <h2>Press Play and start talking...</h2>
+            <h2>Welcome to the meeting!</h2>
             <p>
-              Your speech will be translated into your selected language and
-              spoken back to you.
+              Press the play button and start talking. Your speech will be
+              translated for everyone in the call.
             </p>
           </div>
         ) : (
