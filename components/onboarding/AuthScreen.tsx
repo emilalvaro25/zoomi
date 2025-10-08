@@ -64,21 +64,23 @@ const AuthScreen: React.FC = () => {
             : 'Sign in to your account'}
         </p>
         <form onSubmit={handleSubmit} className="auth-form">
+          <label htmlFor="auth-email">Email Address</label>
           <input
+            id="auth-email"
             type="email"
             placeholder="Your email"
             value={email}
             onChange={e => setEmail(e.target.value)}
             required
-            aria-label="Your email"
           />
+          <label htmlFor="auth-password">Password</label>
           <input
+            id="auth-password"
             type="password"
             placeholder="Your password"
             value={password}
             onChange={e => setPassword(e.target.value)}
             required
-            aria-label="Your password"
           />
           <button type="submit" className="auth-button" disabled={loading}>
             {loading ? '...' : isSignUp ? 'Sign Up' : 'Sign In'}

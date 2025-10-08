@@ -70,17 +70,19 @@ const JoinScreen: React.FC = () => {
         <h2>Join Meeting</h2>
         <p>Set up your camera and microphone before joining.</p>
         <div className="join-form">
+          <label htmlFor="join-name">Your Name</label>
           <input
+            id="join-name"
             type="text"
             placeholder="Your name"
             value={name}
             onChange={e => setName(e.target.value)}
-            aria-label="Your name"
           />
+          <label htmlFor="join-language">Translation Language</label>
           <select
+            id="join-language"
             value={language}
             onChange={e => setLanguage(e.target.value)}
-            aria-label="Select output language"
           >
             {AVAILABLE_LANGUAGES.map(lang => (
               <option key={lang} value={lang}>

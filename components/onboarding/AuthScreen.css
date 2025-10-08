@@ -41,6 +41,13 @@
   margin-bottom: 20px;
 }
 
+.auth-form label {
+  text-align: left;
+  font-size: 14px;
+  color: var(--Neutral-80);
+  margin-bottom: -8px;
+}
+
 .auth-form input {
   padding: 12px;
   border-radius: 8px;
