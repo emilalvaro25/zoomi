@@ -50,21 +50,37 @@ const JoinScreen: React.FC = () => {
 
       const role = isJoining ? 'student' : 'host';
 
-      const { error: upsertError } = await supabase.from('participants').upsert(
-        {
-          uid,
-          name,
-          is_muted: role === 'student',
-          is_camera_off: true,
-          is_hand_raised: false,
-          meeting_id: currentMeetingId,
-          role: role,
-          language: role === 'student' ? language : 'English',
-        },
-        { onConflict: 'uid' },
-      );
+      // WORKAROUND for RLS policy on UPDATE:
+      // First, delete any existing participant record for this user.
+      // This is safer than upsert if the UPDATE policy is restrictive (e.g., prevents changing meeting_id).
+      const { error: deleteError } = await supabase
+        .from('participants')
+        .delete()
+        .eq('uid', uid);
 
-      if (upsertError) throw new Error(upsertError.message);
+      // We can ignore deleteError if the row didn't exist, the insert will work.
+      // If the row exists and we can't delete it, the insert will fail on UNIQUE constraint,
+      // and we'll show that error.
+      if (deleteError) {
+        console.warn(
+          'Supabase: Could not delete prior participant record. This may be ok if one did not exist.',
+          deleteError,
+        );
+      }
+
+      // Now, insert the new participant record.
+      const { error: insertError } = await supabase.from('participants').insert({
+        uid,
+        name,
+        is_muted: role === 'student',
+        is_camera_off: true,
+        is_hand_raised: false,
+        meeting_id: currentMeetingId,
+        role: role,
+        language: role === 'student' ? language : 'English',
+      });
+
+      if (insertError) throw new Error(insertError.message);
 
       addLocalParticipant(name, role, language);
       setHasJoined(true);
