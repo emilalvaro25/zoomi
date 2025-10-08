@@ -176,6 +176,7 @@ export interface Participant {
   name: string;
   isMuted: boolean;
   isCameraOff: boolean;
+  isHandRaised: boolean;
   isLocal: boolean;
   role: 'host' | 'student';
   language?: string;
@@ -199,6 +200,7 @@ export const useParticipantStore = create<{
   removeParticipant: (uid: string) => void;
   setMuted: (uid: string, isMuted: boolean) => Promise<void>;
   setCameraOff: (uid: string, isCameraOff: boolean) => Promise<void>;
+  setHandRaised: (uid: string, isHandRaised: boolean) => Promise<void>;
   setAllMuted: (isMuted: boolean) => Promise<void>;
 }>((set, get) => ({
   participants: [],
@@ -237,6 +239,7 @@ export const useParticipantStore = create<{
       name: `${name} (You)`,
       isMuted: role === 'student', // Students are muted by default
       isCameraOff: true,
+      isHandRaised: false,
       isLocal: true,
       role,
       language,
@@ -302,6 +305,19 @@ export const useParticipantStore = create<{
       await supabase
         .from('participants')
         .update({ is_camera_off: isCameraOff })
+        .eq('uid', uid);
+    }
+  },
+  setHandRaised: async (uid, isHandRaised) => {
+    set(state => ({
+      participants: state.participants.map(p =>
+        p.uid === uid ? { ...p, isHandRaised } : p,
+      ),
+    }));
+    if (uid === get().localParticipant?.uid) {
+      await supabase
+        .from('participants')
+        .update({ is_hand_raised: isHandRaised })
         .eq('uid', uid);
     }
   },

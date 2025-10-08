@@ -78,3 +78,7 @@
 .participant-status .cam-off {
   color: var(--Red-400);
 }
+
+.participant-status .hand-raised {
+  color: #fbbc05; /* Google Yellow */
+}

@@ -45,6 +45,11 @@ const Participant: React.FC<ParticipantProps> = ({ participant }) => {
         </div>
       </div>
       <div className="participant-status">
+        {participant.isHandRaised && (
+          <span className="icon hand-raised" title="Hand Raised">
+            front_hand
+          </span>
+        )}
         {participant.isMuted ? (
           <span className="icon muted" title="Muted">
             mic_off

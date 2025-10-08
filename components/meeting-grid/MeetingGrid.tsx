@@ -12,12 +12,23 @@ const MeetingGrid: React.FC = () => {
   const { participants, pinnedParticipantUid } = useParticipantStore();
 
   const sortedParticipants = React.useMemo(() => {
-    if (!pinnedParticipantUid) {
-      return participants;
-    }
-    const pinned = participants.find(p => p.uid === pinnedParticipantUid);
-    const others = participants.filter(p => p.uid !== pinnedParticipantUid);
-    return pinned ? [pinned, ...others] : participants;
+    const sorted = [...participants].sort((a, b) => {
+      // Pinned participant always first
+      if (a.uid === pinnedParticipantUid) return -1;
+      if (b.uid === pinnedParticipantUid) return 1;
+
+      // Participants with hand raised next
+      if (a.isHandRaised && !b.isHandRaised) return -1;
+      if (!a.isHandRaised && b.isHandRaised) return 1;
+
+      // Sort by role (host before student) as a tie-breaker
+      if (a.role === 'host' && b.role !== 'host') return -1;
+      if (a.role !== 'host' && b.role === 'host') return 1;
+      
+      // Finally, sort by name
+      return a.name.localeCompare(b.name);
+    });
+    return sorted;
   }, [participants, pinnedParticipantUid]);
 
   return (

@@ -56,6 +56,12 @@ const ParticipantTile: React.FC<ParticipantTileProps> = ({ participant }) => {
         'is-pinned': isPinned,
       })}
     >
+      {participant.isHandRaised && (
+        <div className="hand-raised-overlay" title="Hand raised">
+          <span className="icon">front_hand</span>
+        </div>
+      )}
+
       <button
         className="pin-button"
         onClick={handlePinClick}

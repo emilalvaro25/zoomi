@@ -56,6 +56,7 @@ function ControlTray({ children }: ControlTrayProps) {
     participants,
     setAllMuted,
     setSpeakingParticipant,
+    setHandRaised,
   } = useParticipantStore();
   const [showEffects, setShowEffects] = useState(false);
   const [isAllMuted, setIsAllMuted] = useState(false);
@@ -219,6 +220,12 @@ function ControlTray({ children }: ControlTrayProps) {
     }
   };
 
+  const handleRaiseHandToggle = () => {
+    if (localParticipant) {
+      setHandRaised(localParticipant.uid, !localParticipant.isHandRaised);
+    }
+  };
+
   const micButtonTitle = connected
     ? muted
       ? 'Unmute microphone'
@@ -233,6 +240,10 @@ function ControlTray({ children }: ControlTrayProps) {
   const muteAllButtonTitle = isAllMuted
     ? 'Unmute all participants'
     : 'Mute all participants';
+  const raiseHandButtonTitle = localParticipant?.isHandRaised
+    ? 'Lower hand'
+    : 'Raise hand';
+
   const remoteParticipantsExist = participants.some(p => !p.isLocal);
 
   const isHost = localParticipant?.role === 'host';
@@ -261,6 +272,15 @@ function ControlTray({ children }: ControlTrayProps) {
           <span className="material-symbols-outlined filled">
             {videoEnabled ? 'videocam' : 'videocam_off'}
           </span>
+        </button>
+        <button
+          className={cn('action-button', {
+            active: localParticipant?.isHandRaised,
+          })}
+          onClick={handleRaiseHandToggle}
+          title={raiseHandButtonTitle}
+        >
+          <span className="material-symbols-outlined filled">front_hand</span>
         </button>
         {isHost && (
           <button
