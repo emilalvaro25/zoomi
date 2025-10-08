@@ -226,12 +226,18 @@ button .icon {
   flex-direction: column;
 }
 
+.app-layout {
+  display: flex;
+  height: 100vh;
+  width: 100vw;
+}
+
 .streaming-console {
   background: var(--Neutral-10);
   color: var(--gray-300);
   display: flex;
-  height: 100vh;
-  width: 100vw;
+  flex-grow: 1;
+  overflow: hidden;
 }
 
 .streaming-console a,
@@ -270,6 +276,7 @@ button .icon {
   width: 100%;
   height: 100%;
   padding-bottom: 120px; /* Space for control tray */
+  position: relative;
 }
 
 .App.full-screen .main-app-area {
@@ -354,7 +361,8 @@ button .icon {
 }
 
 .action-button.connected,
-.action-button.video-enabled {
+.action-button.video-enabled,
+.action-button.active {
   background: var(--Blue-800);
   color: var(--Blue-500);
 }
@@ -377,10 +385,14 @@ button .icon {
 
 .mic-button {
   position: relative;
-  background-color: var(--accent-red);
+  background-color: var(--Neutral-20);
+  color: var(--Neutral-60);
   z-index: 1;
-  color: black;
   transition: all 0.2s ease-in;
+}
+.mic-button:not(:disabled) {
+  background-color: var(--accent-red);
+  color: black;
 }
 
 .mic-button:focus {
@@ -388,7 +400,7 @@ button .icon {
   outline: 2px solid var(--Red-500);
 }
 
-.mic-button:hover {
+.mic-button:not(:disabled):hover {
   background-color: var(--Red-400);
 }
 
@@ -737,6 +749,7 @@ button .icon {
   overflow: hidden;
   border: 1px solid var(--border-stroke);
   height: 100%;
+  min-width: 400px;
 }
 
 .light-overlay {
@@ -767,6 +780,7 @@ button .icon {
   flex-direction: column;
   align-items: center;
   gap: 4px;
+  position: relative; /* For popover positioning */
 }
 
 .control-indicator {
@@ -775,4 +789,81 @@ button .icon {
   font-family: 'Roboto Mono', monospace;
   text-transform: capitalize;
   user-select: none;
+}
+
+.effects-popover {
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  margin-bottom: 10px;
+  background: var(--Neutral-15);
+  border-radius: 12px;
+  border: 1px solid var(--Neutral-30);
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  z-index: 15;
+}
+
+.effects-popover button {
+  background: transparent;
+  padding: 8px 16px;
+  border-radius: 8px;
+  text-align: left;
+  text-transform: capitalize;
+  transition: background-color 0.2s ease;
+}
+
+.effects-popover button:hover {
+  background-color: var(--Neutral-20);
+}
+
+.sidebar .transcript-section {
+  display: flex;
+  flex-direction: column;
+  flex-grow: 1;
+  overflow: hidden; /* Important for containing the scrolling child */
+}
+
+.sidebar .transcript-section .transcription-container {
+  flex-grow: 1;
+  height: auto; /* Override fixed height if any */
+  max-height: 100%; /* Ensure it doesn't overflow its container */
+  border: none;
+  background: transparent;
+  padding: 0;
+  min-width: 0; /* Override min-width */
+  flex-basis: auto; /* reset flex basis */
+}
+
+.sidebar .transcript-section .transcription-view {
+  background: var(--Neutral-10);
+  border-radius: 8px;
+  padding: 10px;
+  font-size: 1rem;
+}
+
+.header-right {
+  gap: 20px;
+}
+
+.user-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: var(--Neutral-80);
+}
+
+.signout-button {
+  background-color: var(--Neutral-20);
+  color: var(--Neutral-80);
+  padding: 8px 12px;
+  border-radius: 8px;
+  transition: background-color 0.2s;
+}
+
+.signout-button:hover {
+  background-color: var(--Neutral-30);
 }

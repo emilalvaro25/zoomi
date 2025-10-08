@@ -1,0 +1,32 @@
+/**
+ * @license
+ * SPDX-License-Identifier: Apache-2.0
+*/
+.participant-list {
+  display: flex;
+  flex-direction: column;
+  width: 280px;
+  flex-shrink: 0;
+  background-color: var(--Neutral-5);
+  border-right: 1px solid var(--border-stroke);
+  padding: 20px;
+  height: 100vh;
+  overflow-y: auto;
+}
+
+.participant-list-header {
+  color: var(--Neutral-80);
+  font-size: 16px;
+  margin-bottom: 20px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--border-stroke);
+}
+
+.participant-list-items {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}

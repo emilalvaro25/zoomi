@@ -1,0 +1,61 @@
+/**
+ * @license
+ * SPDX-License-Identifier: Apache-2.0
+*/
+.participant-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px;
+  border-radius: 8px;
+  background-color: var(--Neutral-10);
+  transition: background-color 0.2s ease;
+}
+
+.participant-item:hover {
+  background-color: var(--Neutral-15);
+}
+
+.participant-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background-color: var(--Neutral-30);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  color: var(--Neutral-90);
+  flex-shrink: 0;
+}
+
+.participant-avatar .icon {
+  font-size: 24px;
+}
+
+.participant-info {
+  flex-grow: 1;
+  overflow: hidden;
+}
+
+.participant-name {
+  color: var(--Neutral-90);
+  font-size: 14px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.participant-status {
+  display: flex;
+  gap: 8px;
+  color: var(--Neutral-80);
+}
+
+.participant-status .icon {
+  font-size: 20px;
+}
+
+.participant-status .muted,
+.participant-status .cam-off {
+  color: var(--Red-400);
+}

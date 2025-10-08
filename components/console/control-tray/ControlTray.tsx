@@ -30,9 +30,11 @@ import {
   useCameraState,
   ZOOM_LEVELS,
   LIGHT_TYPES,
+  useParticipantStore,
 } from '@/lib/state';
 
 import { useLiveAPIContext } from '../../../contexts/LiveAPIContext';
+import { VIDEO_EFFECTS } from '@/lib/constants';
 
 export type ControlTrayProps = {
   children?: ReactNode;
@@ -40,10 +42,14 @@ export type ControlTrayProps = {
 
 function ControlTray({ children }: ControlTrayProps) {
   const [audioRecorder] = useState(() => new AudioRecorder());
-  const [muted, setMuted] = useState(false);
+  const [muted, setMuted] = useState(true);
   const connectButtonRef = useRef<HTMLButtonElement>(null);
   const { isFullScreen, toggleFullScreen } = useUI();
-  const { zoom, lightType, setZoom, setLightType } = useCameraState();
+  const { zoom, lightType, effect, setZoom, setLightType, setEffect } =
+    useCameraState();
+  const { localParticipantId, setMuted: setParticipantMuted } =
+    useParticipantStore();
+  const [showEffects, setShowEffects] = useState(false);
 
   const {
     client,
@@ -61,10 +67,11 @@ function ControlTray({ children }: ControlTrayProps) {
   }, [connected]);
 
   useEffect(() => {
-    if (!connected) {
-      setMuted(false);
+    if (localParticipantId) {
+      // Muted is true if not connected or explicitly muted
+      setParticipantMuted(localParticipantId, !connected || muted);
     }
-  }, [connected]);
+  }, [muted, connected, localParticipantId, setParticipantMuted]);
 
   useEffect(() => {
     const onData = (base64: string) => {
@@ -89,8 +96,6 @@ function ControlTray({ children }: ControlTrayProps) {
   const handleMicClick = () => {
     if (connected) {
       setMuted(!muted);
-    } else {
-      connect();
     }
   };
 
@@ -136,11 +141,20 @@ function ControlTray({ children }: ControlTrayProps) {
     setLightType(LIGHT_TYPES[nextIndex]);
   };
 
+  const handleConnectToggle = () => {
+    if (connected) {
+      disconnect();
+    } else {
+      connect();
+      setMuted(false); // Unmute on connect
+    }
+  };
+
   const micButtonTitle = connected
     ? muted
       ? 'Unmute microphone'
       : 'Mute microphone'
-    : 'Connect and start microphone';
+    : 'Microphone (disconnected)';
 
   const connectButtonTitle = connected ? 'Stop streaming' : 'Start streaming';
   const videoButtonTitle = videoEnabled ? 'Turn off camera' : 'Turn on camera';
@@ -155,11 +169,12 @@ function ControlTray({ children }: ControlTrayProps) {
           className={cn('action-button mic-button')}
           onClick={handleMicClick}
           title={micButtonTitle}
+          disabled={!connected}
         >
-          {!muted ? (
-            <span className="material-symbols-outlined filled">mic</span>
-          ) : (
+          {muted ? (
             <span className="material-symbols-outlined filled">mic_off</span>
+          ) : (
+            <span className="material-symbols-outlined filled">mic</span>
           )}
         </button>
         <button
@@ -190,6 +205,33 @@ function ControlTray({ children }: ControlTrayProps) {
             <span className="material-symbols-outlined filled">lightbulb</span>
           </button>
           <span className="control-indicator">{lightType}</span>
+        </div>
+        <div className="control-group">
+          <button
+            className={cn('action-button', { active: showEffects })}
+            onClick={() => setShowEffects(!showEffects)}
+            title="Video Effects"
+          >
+            <span className="material-symbols-outlined filled">
+              auto_awesome
+            </span>
+          </button>
+          <span className="control-indicator">{effect}</span>
+          {showEffects && (
+            <div className="effects-popover">
+              {VIDEO_EFFECTS.map(fx => (
+                <button
+                  key={fx}
+                  onClick={() => {
+                    setEffect(fx);
+                    setShowEffects(false);
+                  }}
+                >
+                  {fx}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
         <button
           className={cn('action-button')}
@@ -224,7 +266,7 @@ function ControlTray({ children }: ControlTrayProps) {
           <button
             ref={connectButtonRef}
             className={cn('action-button connect-toggle', { connected })}
-            onClick={connected ? disconnect : connect}
+            onClick={handleConnectToggle}
             title={connectButtonTitle}
           >
             <span className="material-symbols-outlined filled">

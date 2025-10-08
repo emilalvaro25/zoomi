@@ -1,0 +1,37 @@
+.subtitle-overlay {
+  position: absolute;
+  bottom: 120px; /* Above control tray */
+  left: 50%;
+  transform: translateX(-50%);
+  width: 80%;
+  max-width: 900px;
+  background-color: rgba(0, 0, 0, 0.6);
+  color: #fff;
+  padding: 10px 20px;
+  border-radius: 12px;
+  text-align: center;
+  z-index: 10;
+  opacity: 0;
+  transition: opacity 0.5s ease-in-out;
+  pointer-events: none;
+  user-select: none;
+}
+
+.App.full-screen .subtitle-overlay {
+    bottom: 30px;
+}
+
+.subtitle-overlay.visible {
+  opacity: 1;
+}
+
+.subtitle-text {
+  font-size: 22px;
+  margin: 0;
+  line-height: 1.4;
+  text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.8);
+}
+
+.subtitle-text.interim {
+  opacity: 0.7;
+}

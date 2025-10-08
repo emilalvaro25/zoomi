@@ -50,7 +50,7 @@ const renderContent = (text: string) => {
 
 export default function StreamingConsole() {
   const { client, setConfig } = useLiveAPIContext();
-  const { systemPrompt, voice } = useSettings();
+  const { systemPrompt, voice, language } = useSettings();
   const { tools } = useTools();
   const turns = useLogStore(state => state.turns);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -68,6 +68,8 @@ export default function StreamingConsole() {
           },
         ],
       }));
+    
+    const fullSystemPrompt = `${systemPrompt} All your responses must be in ${language}.`;
 
     // Using `any` for config to accommodate `speechConfig`, which is not in the
     // current TS definitions but is used in the working reference example.
@@ -85,7 +87,7 @@ export default function StreamingConsole() {
       systemInstruction: {
         parts: [
           {
-            text: systemPrompt,
+            text: fullSystemPrompt,
           },
         ],
       },
@@ -93,7 +95,7 @@ export default function StreamingConsole() {
     };
 
     setConfig(config);
-  }, [setConfig, systemPrompt, tools, voice]);
+  }, [setConfig, systemPrompt, tools, voice, language]);
 
   useEffect(() => {
     const { addTurn, updateLastTurn } = useLogStore.getState();

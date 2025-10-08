@@ -1,0 +1,129 @@
+.join-screen-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.85);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 2000;
+  color: var(--text);
+}
+
+.join-screen-container {
+  background-color: var(--Neutral-10);
+  padding: 40px;
+  border-radius: 16px;
+  width: 90%;
+  max-width: 450px;
+  text-align: center;
+  border: 1px solid var(--border-stroke);
+}
+
+.join-screen-container h2 {
+  font-size: 28px;
+  margin-bottom: 12px;
+  color: var(--Neutral-90);
+}
+
+.join-screen-container > p {
+  font-size: 16px;
+  color: var(--Neutral-60);
+  margin-bottom: 30px;
+}
+
+.join-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-bottom: 30px;
+}
+
+.join-form input, .join-form select {
+  padding: 12px;
+  border-radius: 8px;
+  border: 1px solid var(--Neutral-30);
+  background-color: var(--Neutral-15);
+  color: var(--text);
+  font-size: 16px;
+}
+
+.join-form input:focus, .join-form select:focus {
+  outline: none;
+  border-color: var(--Blue-500);
+}
+
+.join-button {
+  padding: 14px;
+  border-radius: 8px;
+  background-color: var(--Blue-500);
+  color: var(--Neutral-5);
+  font-weight: bold;
+  font-size: 16px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.join-button:hover {
+  background-color: var(--Blue-400);
+}
+
+.error-text {
+  color: var(--Red-400);
+  font-size: 14px;
+  margin: -8px 0;
+}
+
+.permissions-info {
+  font-size: 14px;
+  color: var(--Neutral-50);
+  margin-bottom: 30px;
+}
+
+.permissions-info ul {
+  list-style: none;
+  padding: 0;
+  margin-top: 10px;
+  display: flex;
+  justify-content: center;
+  gap: 20px;
+}
+
+.permissions-info li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.share-link-container {
+    display: flex;
+    gap: 8px;
+}
+
+.share-link-container input {
+    flex-grow: 1;
+    padding: 10px;
+    border-radius: 8px;
+    border: 1px solid var(--Neutral-30);
+    background-color: var(--Neutral-15);
+    color: var(--Neutral-60);
+    font-size: 14px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.share-link-container button {
+    padding: 0 12px;
+    border-radius: 8px;
+    background-color: var(--Neutral-20);
+    color: var(--Neutral-80);
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+.share-link-container button:hover {
+    background-color: var(--Neutral-30);
+}

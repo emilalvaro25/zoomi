@@ -19,13 +19,24 @@
  */
 
 // FIX: Import React to resolve namespace issue for React.RefObject.
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import { GenAILiveClient } from '../../lib/genai-live-client';
 import { LiveConnectConfig, LiveServerToolCall } from '@google/genai';
 import { AudioStreamer } from '../../lib/audio-streamer';
 import { audioContext } from '../../lib/utils';
 import VolMeterWorket from '../../lib/worklets/vol-meter';
-import { useCameraState, useLogStore, useSettings } from '@/lib/state';
+import {
+  useCameraState,
+  useLogStore,
+  useParticipantStore,
+  useSettings,
+} from '@/lib/state';
 
 export type UseLiveApiResults = {
   client: GenAILiveClient;
@@ -49,10 +60,14 @@ export function useLiveApi({
   apiKey: string;
 }): UseLiveApiResults {
   const { model } = useSettings();
-  const client = useMemo(() => new GenAILiveClient(apiKey, model), [apiKey, model]);
+  const client = useMemo(
+    () => new GenAILiveClient(apiKey, model),
+    [apiKey, model],
+  );
 
   const audioStreamerRef = useRef<AudioStreamer | null>(null);
   const { setZoom, setLightType } = useCameraState();
+  const { localParticipantId, setCameraOff } = useParticipantStore();
 
   const [volume, setVolume] = useState(0);
   const [connected, setConnected] = useState(false);
@@ -243,7 +258,7 @@ export function useLiveApi({
             }
           },
           'image/jpeg',
-          0.8
+          0.8,
         );
       }, 1000); // 1 FPS
     };
@@ -276,6 +291,9 @@ export function useLiveApi({
         videoRef.current.srcObject = null;
       }
       setVideoEnabled(false);
+      if (localParticipantId) {
+        setCameraOff(localParticipantId, true);
+      }
     } else {
       // Turn on video
       try {
@@ -286,12 +304,15 @@ export function useLiveApi({
           videoRef.current.srcObject = stream;
         }
         setVideoEnabled(true);
+        if (localParticipantId) {
+          setCameraOff(localParticipantId, false);
+        }
       } catch (err) {
-// FIX: Removed stray underscore from catch block
+        // FIX: Removed stray underscore from catch block
         console.error('Error accessing webcam:', err);
       }
     }
-  }, [videoEnabled]);
+  }, [videoEnabled, localParticipantId, setCameraOff]);
 
   return {
     client,

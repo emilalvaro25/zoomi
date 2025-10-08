@@ -27,3 +27,7 @@ export const DEFAULT_LIVE_API_MODEL =
 export const DEFAULT_VOICE = 'Zephyr';
 
 export const AVAILABLE_VOICES = ['Zephyr', 'Puck', 'Charon', 'Luna', 'Nova', 'Kore', 'Fenrir',	'Leda', 'Orus','Aoede','Callirrhoe','Autonoe','Enceladus','Iapetus','Umbriel','Algieba','Despina','Erinome','Algenib','Rasalgethi','Laomedeia','Achernar','Alnilam','Schedar','Gacrux','Pulcherrima','Achird',	'Zubenelgenubi','Vindemiatrix','Sadachbia','Sadaltager','Sulafat'];
+
+export const AVAILABLE_LANGUAGES = ['English', 'Spanish', 'French', 'German', 'Japanese', 'Mandarin', 'Russian'];
+
+export const VIDEO_EFFECTS = ['none', 'blur', 'sepia', 'invert'];

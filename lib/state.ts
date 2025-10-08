@@ -9,12 +9,17 @@ import { customerSupportTools } from './tools/customer-support';
 import { navigationSystemTools } from './tools/navigation-system';
 import { personalAssistantTools } from './tools/personal-assistant';
 
-import { DEFAULT_LIVE_API_MODEL, DEFAULT_VOICE } from './constants';
+import {
+  DEFAULT_LIVE_API_MODEL,
+  DEFAULT_VOICE,
+  AVAILABLE_LANGUAGES,
+} from './constants';
 import {
   FunctionResponse,
   FunctionResponseScheduling,
   LiveServerToolCall,
 } from '@google/genai';
+import { supabase } from './supabase';
 
 /**
  * Settings
@@ -23,18 +28,22 @@ export const useSettings = create<{
   systemPrompt: string;
   model: string;
   voice: string;
+  language: string;
   setSystemPrompt: (prompt: string) => void;
   setModel: (model: string) => void;
   setVoice: (voice: string) => void;
+  setLanguage: (language: string) => void;
 }>(
   persist(
     set => ({
-      systemPrompt: `You are a virtual production assistant. You can control the camera zoom and lighting. Use the provided tools to adjust the scene based on user requests.`,
+      systemPrompt: `You are a virtual production assistant for a live video stream. Your tasks are to control camera zoom and lighting using the provided tools based on user requests. A critical part of your role is to provide all your responses translated exclusively into the user's selected language.`,
       model: DEFAULT_LIVE_API_MODEL,
       voice: DEFAULT_VOICE,
+      language: AVAILABLE_LANGUAGES[0],
       setSystemPrompt: prompt => set({ systemPrompt: prompt }),
       setModel: model => set({ model }),
       setVoice: voice => set({ voice }),
+      setLanguage: language => set({ language }),
     }),
     {
       name: 'zoom-settings-storage',
@@ -47,10 +56,16 @@ export const useSettings = create<{
  */
 export const useUI = create<{
   isFullScreen: boolean;
+  hasJoined: boolean;
+  isSidebarOpen: boolean;
   setFullScreen: (isFullScreen: boolean) => void;
   toggleFullScreen: () => void;
+  setHasJoined: (hasJoined: boolean) => void;
+  toggleSidebar: () => void;
 }>(set => ({
   isFullScreen: false,
+  hasJoined: false,
+  isSidebarOpen: false,
   setFullScreen: isFullScreen => set({ isFullScreen }),
   toggleFullScreen: () =>
     set(state => {
@@ -62,6 +77,8 @@ export const useUI = create<{
         return { isFullScreen: false };
       }
     }),
+  setHasJoined: hasJoined => set({ hasJoined }),
+  toggleSidebar: () => set(state => ({ isSidebarOpen: !state.isSidebarOpen })),
 }));
 
 /**
@@ -73,13 +90,17 @@ export const LIGHT_TYPES = ['none', 'warm', 'cool', 'daylight'];
 export const useCameraState = create<{
   zoom: number;
   lightType: string;
+  effect: string;
   setZoom: (zoom: number) => void;
   setLightType: (lightType: string) => void;
+  setEffect: (effect: string) => void;
 }>(set => ({
   zoom: 1,
   lightType: 'none',
+  effect: 'none',
   setZoom: zoom => set({ zoom: Math.max(1, zoom) }), // Ensure zoom is not less than 1
   setLightType: lightType => set({ lightType }),
+  setEffect: effect => set({ effect }),
 }));
 
 /**
@@ -124,7 +145,7 @@ export const useTools = create<{
   toggleTool: name =>
     set(state => ({
       tools: state.tools.map(tool =>
-        tool.name === name ? { ...tool, isEnabled: !tool.isEnabled } : tool
+        tool.name === name ? { ...tool, isEnabled: !tool.isEnabled } : tool,
       ),
     })),
   addTool: () =>
@@ -146,11 +167,10 @@ export const useTools = create<{
   updateTool: (name, updatedTool) =>
     set(state => ({
       tools: state.tools.map(tool =>
-        tool.name === name ? updatedTool : tool
+        tool.name === name ? updatedTool : tool,
       ),
     })),
 }));
-
 
 /**
  * Logs
@@ -198,4 +218,101 @@ export const useLogStore = create<{
     });
   },
   clearTurns: () => set({ turns: [] }),
+}));
+
+/**
+ * Participants
+ */
+export interface Participant {
+  uid: string;
+  name: string;
+  isMuted: boolean;
+  isCameraOff: boolean;
+  isLocal: boolean;
+}
+
+export const useParticipantStore = create<{
+  participants: Participant[];
+  localParticipantId: string | null;
+  setLocalParticipantId: (uid: string | null) => void;
+  addLocalParticipant: (name: string) => void;
+  setParticipants: (participants: Participant[]) => void;
+  addOrUpdateParticipant: (participant: Participant) => void;
+  removeParticipant: (uid: string) => void;
+  setMuted: (uid: string, isMuted: boolean) => Promise<void>;
+  setCameraOff: (uid: string, isCameraOff: boolean) => Promise<void>;
+}>((set, get) => ({
+  participants: [],
+  localParticipantId: null,
+  setLocalParticipantId: (uid: string | null) => {
+    set({ localParticipantId: uid });
+  },
+  addLocalParticipant: (name: string) => {
+    const uid = get().localParticipantId;
+    if (!uid) {
+      console.error('Cannot add local participant without a session.');
+      return;
+    }
+    const newParticipant: Participant = {
+      uid,
+      name: `${name} (You)`,
+      isMuted: true,
+      isCameraOff: true,
+      isLocal: true,
+    };
+    set(state => ({
+      // Avoid duplicates on re-join
+      participants: [
+        ...state.participants.filter(p => !p.isLocal),
+        newParticipant,
+      ],
+    }));
+  },
+  setParticipants: (participants: Participant[]) => {
+    set({ participants });
+  },
+  addOrUpdateParticipant: (participant: Participant) => {
+    set(state => {
+      const existing = state.participants.find(p => p.uid === participant.uid);
+      if (existing) {
+        return {
+          participants: state.participants.map(p =>
+            p.uid === participant.uid ? { ...p, ...participant } : p,
+          ),
+        };
+      }
+      return { participants: [...state.participants, participant] };
+    });
+  },
+  removeParticipant: (uid: string) => {
+    set(state => ({
+      participants: state.participants.filter(p => p.uid !== uid),
+    }));
+  },
+  setMuted: async (uid, isMuted) => {
+    set(state => ({
+      participants: state.participants.map(p =>
+        p.uid === uid ? { ...p, isMuted } : p,
+      ),
+    }));
+    if (uid === get().localParticipantId) {
+      await supabase
+        .from('participants')
+        .update({ is_muted: isMuted })
+        .eq('uid', uid);
+    }
+  },
+  setCameraOff: async (uid, isCameraOff) => {
+    set(state => ({
+      participants: state.participants.map(p =>
+        p.uid === uid ? { ...p, isCameraOff } : p,
+      ),
+    }));
+    if (uid === get().localParticipantId) {
+      await supabase
+        .from('participants')
+        .update({ is_camera_off: isCameraOff })
+        .eq('uid', uid);
+    }
+  },
 }));
