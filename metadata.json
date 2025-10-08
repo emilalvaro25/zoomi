@@ -1,0 +1,8 @@
+{
+  "name": "zoomi",
+  "description": "",
+  "requestFramePermissions": [
+    "microphone",
+    "camera"
+  ]
+}
