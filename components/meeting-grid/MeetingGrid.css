@@ -8,3 +8,14 @@
   overflow-y: auto;
   align-content: start;
 }
+
+/* Styles for when a participant is pinned */
+.meeting-grid.has-pinned {
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+}
+
+.meeting-grid.has-pinned .participant-tile.is-pinned {
+  grid-column: 1 / -1; /* Pinned tile takes full width */
+  min-height: 40vh; /* Ensure it has a larger height */
+  aspect-ratio: auto;
+}

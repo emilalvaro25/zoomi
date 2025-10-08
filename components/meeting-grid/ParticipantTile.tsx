@@ -13,11 +13,20 @@ interface ParticipantTileProps {
 }
 
 const ParticipantTile: React.FC<ParticipantTileProps> = ({ participant }) => {
+  const {
+    speakingParticipantUid,
+    pinnedParticipantUid,
+    setPinnedParticipant,
+  } = useParticipantStore();
+
   const isVideoOn = !participant.isCameraOff;
-  const speakingParticipantUid = useParticipantStore(
-    state => state.speakingParticipantUid,
-  );
   const isSpeaking = participant.uid === speakingParticipantUid;
+  const isPinned = participant.uid === pinnedParticipantUid;
+
+  const handlePinClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setPinnedParticipant(isPinned ? null : participant.uid);
+  };
 
   const renderContent = () => {
     if (isVideoOn) {
@@ -41,7 +50,20 @@ const ParticipantTile: React.FC<ParticipantTileProps> = ({ participant }) => {
   };
 
   return (
-    <div className={cn('participant-tile', { 'is-speaking': isSpeaking })}>
+    <div
+      className={cn('participant-tile', {
+        'is-speaking': isSpeaking,
+        'is-pinned': isPinned,
+      })}
+    >
+      <button
+        className="pin-button"
+        onClick={handlePinClick}
+        title={isPinned ? 'Unpin participant' : 'Pin participant'}
+      >
+        <span className="icon">push_pin</span>
+      </button>
+
       {renderContent()}
 
       <div className="participant-name-overlay">

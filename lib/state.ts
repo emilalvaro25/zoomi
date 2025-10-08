@@ -185,6 +185,8 @@ export const useParticipantStore = create<{
   participants: Participant[];
   localParticipant: Participant | null;
   speakingParticipantUid: string | null;
+  pinnedParticipantUid: string | null;
+  setPinnedParticipant: (uid: string | null) => void;
   setSpeakingParticipant: (uid: string | null) => void;
   setLocalParticipantId: (uid: string | null) => void;
   addLocalParticipant: (
@@ -202,6 +204,8 @@ export const useParticipantStore = create<{
   participants: [],
   localParticipant: null,
   speakingParticipantUid: null,
+  pinnedParticipantUid: null,
+  setPinnedParticipant: uid => set({ pinnedParticipantUid: uid }),
   setSpeakingParticipant: (uid: string | null) =>
     set({ speakingParticipantUid: uid }),
   setLocalParticipantId: (uid: string | null) => {
