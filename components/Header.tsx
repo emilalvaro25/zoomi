@@ -7,7 +7,7 @@ import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/lib/auth';
 
 export default function Header() {
-  const { toggleSidebar } = useUI();
+  const { toggleSidebar, toggleParticipantList } = useUI();
   const { session } = useAuth();
 
   const handleSignOut = async () => {
@@ -20,9 +20,18 @@ export default function Header() {
   return (
     <header>
       <div className="header-left">
-        <h1>Native Audio Function Call Sandbox</h1>
-        <p>Copy the app and ask the Code Assistant to add function calls.</p>
-        <p>Build your own function call experiment.</p>
+        <button
+          className="participant-toggle-button"
+          onClick={toggleParticipantList}
+          aria-label="Toggle Participants"
+        >
+          <span className="icon">group</span>
+        </button>
+        <div className="header-text">
+          <h1>Native Audio Function Call Sandbox</h1>
+          <p>Copy the app and ask the Code Assistant to add function calls.</p>
+          <p>Build your own function call experiment.</p>
+        </div>
       </div>
       <div className="header-right">
         {session && (

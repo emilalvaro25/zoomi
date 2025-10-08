@@ -58,14 +58,17 @@ export const useUI = create<{
   isFullScreen: boolean;
   hasJoined: boolean;
   isSidebarOpen: boolean;
+  isParticipantListOpen: boolean;
   setFullScreen: (isFullScreen: boolean) => void;
   toggleFullScreen: () => void;
   setHasJoined: (hasJoined: boolean) => void;
   toggleSidebar: () => void;
+  toggleParticipantList: () => void;
 }>(set => ({
   isFullScreen: false,
   hasJoined: false,
   isSidebarOpen: false,
+  isParticipantListOpen: window.innerWidth > 1024,
   setFullScreen: isFullScreen => set({ isFullScreen }),
   toggleFullScreen: () =>
     set(state => {
@@ -79,6 +82,8 @@ export const useUI = create<{
     }),
   setHasJoined: hasJoined => set({ hasJoined }),
   toggleSidebar: () => set(state => ({ isSidebarOpen: !state.isSidebarOpen })),
+  toggleParticipantList: () =>
+    set(state => ({ isParticipantListOpen: !state.isParticipantListOpen })),
 }));
 
 /**

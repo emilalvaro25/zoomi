@@ -11,7 +11,7 @@
  *
  *     http://www.apache.org/licenses/LICENSE-2.0
  *
- * Unless required by applicable law of agreed to in writing, software
+ * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
@@ -23,7 +23,11 @@ import ControlTray from './components/console/control-tray/ControlTray';
 import ErrorScreen from './components/demo/ErrorScreen';
 
 import { LiveAPIProvider } from './contexts/LiveAPIContext';
-import { useUI, useCameraState, useParticipantStore } from './lib/state';
+import {
+  useUI,
+  useCameraState,
+  useParticipantStore,
+} from './lib/state';
 import WebcamView from './components/demo/webcam-view/WebcamView';
 import { useEffect } from 'react';
 import ParticipantList from './components/participant-list/ParticipantList';
@@ -45,7 +49,8 @@ if (typeof API_KEY !== 'string') {
  * Manages video streaming state and provides controls for webcam/screen capture.
  */
 function App() {
-  const { isFullScreen, setFullScreen, hasJoined } = useUI();
+  const { isFullScreen, setFullScreen, hasJoined, isParticipantListOpen } =
+    useUI();
   const { lightType } = useCameraState();
   const {
     localParticipantId,
@@ -115,7 +120,10 @@ function App() {
         'postgres_changes',
         { event: '*', schema: 'public', table: 'participants' },
         payload => {
-          if (payload.eventType === 'INSERT' || payload.eventType === 'UPDATE') {
+          if (
+            payload.eventType === 'INSERT' ||
+            payload.eventType === 'UPDATE'
+          ) {
             const p = payload.new;
             addOrUpdateParticipant({
               uid: p.uid,
@@ -175,7 +183,7 @@ function App() {
         <Sidebar />
         <ErrorScreen />
         <div className="app-layout">
-          <ParticipantList />
+          <ParticipantList className={cn({ open: isParticipantListOpen })} />
           <div className="streaming-console">
             <main>
               <div className="main-app-area">

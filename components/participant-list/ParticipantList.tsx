@@ -6,12 +6,13 @@ import React from 'react';
 import { useParticipantStore } from '@/lib/state';
 import Participant from './Participant';
 import './ParticipantList.css';
+import cn from 'classnames';
 
-export default function ParticipantList() {
+export default function ParticipantList({ className }: { className?: string }) {
   const { participants } = useParticipantStore();
 
   return (
-    <aside className="participant-list">
+    <aside className={cn('participant-list', className)}>
       <h3 className="participant-list-header">
         Participants ({participants.length})
       </h3>

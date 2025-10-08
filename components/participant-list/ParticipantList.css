@@ -10,7 +10,7 @@
   background-color: var(--Neutral-5);
   border-right: 1px solid var(--border-stroke);
   padding: 20px;
-  height: 100vh;
+  height: 100%;
   overflow-y: auto;
 }
 

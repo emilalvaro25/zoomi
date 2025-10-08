@@ -226,10 +226,17 @@ button .icon {
   flex-direction: column;
 }
 
+.App {
+  position: relative;
+  height: 100vh;
+  padding-top: 80px;
+  overflow: hidden;
+}
+
 .app-layout {
   display: flex;
-  height: 100vh;
-  width: 100vw;
+  height: 100%;
+  width: 100%;
 }
 
 .streaming-console {
@@ -238,6 +245,7 @@ button .icon {
   display: flex;
   flex-grow: 1;
   overflow: hidden;
+  height: 100%;
 }
 
 .streaming-console a,
@@ -845,8 +853,51 @@ button .icon {
   font-size: 1rem;
 }
 
-.header-right {
+header {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 24px;
+  background: var(--Neutral-10);
+  border-bottom: 1px solid var(--border-stroke);
+  z-index: 1000;
+  height: 80px;
+}
+
+.header-left {
+  display: flex;
+  align-items: center;
   gap: 20px;
+  overflow: hidden;
+}
+
+.header-text p {
+  font-size: 0.9rem;
+  color: var(--Neutral-60);
+  white-space: nowrap;
+}
+
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  flex-shrink: 0;
+}
+
+.settings-button {
+  background: var(--Neutral-20);
+  color: var(--Neutral-80);
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  justify-content: center;
+}
+.settings-button .icon {
+  font-size: 24px;
 }
 
 .user-info {
@@ -866,4 +917,414 @@ button .icon {
 
 .signout-button:hover {
   background-color: var(--Neutral-30);
+}
+
+.participant-toggle-button {
+  display: none; /* hidden by default on desktop */
+  background: var(--Neutral-20);
+  color: var(--Neutral-80);
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.participant-toggle-button .icon {
+  font-size: 24px;
+}
+
+/* Sidebar Styles */
+.sidebar {
+  position: fixed;
+  top: 0;
+  right: -400px;
+  height: 100%;
+  width: 400px;
+  background-color: var(--Neutral-10);
+  border-left: 1px solid var(--border-stroke);
+  z-index: 1002;
+  transition: right 0.3s ease-in-out;
+  display: flex;
+  flex-direction: column;
+}
+
+.sidebar.open {
+  right: 0;
+  box-shadow: -2px 0 10px rgba(0, 0, 0, 0.3);
+}
+
+.sidebar-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px;
+  border-bottom: 1px solid var(--border-stroke);
+  flex-shrink: 0;
+}
+
+.sidebar-header h3 {
+  font-size: 1.2rem;
+}
+
+.sidebar-header .close-button {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--text);
+}
+.sidebar-header .close-button .icon {
+  font-size: 24px;
+}
+
+.sidebar-content {
+  padding: 20px;
+  overflow-y: auto;
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.sidebar-section fieldset {
+  border: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.sidebar-section label {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-size: 14px;
+  color: var(--Neutral-80);
+}
+
+.sidebar-section input,
+.sidebar-section textarea,
+.sidebar-section select {
+  width: 100%;
+  background-color: var(--Neutral-15);
+  border: 1px solid var(--Neutral-30);
+  border-radius: 8px;
+  padding: 10px;
+  color: var(--text);
+  font-size: 14px;
+}
+
+.sidebar-section textarea {
+  resize: vertical;
+}
+
+.sidebar-section-title {
+  font-size: 1rem;
+  font-weight: bold;
+  margin-bottom: 16px;
+  color: var(--Neutral-90);
+}
+
+.tools-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.tool-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background-color: var(--Neutral-15);
+  padding: 10px;
+  border-radius: 8px;
+}
+
+.tool-checkbox-wrapper {
+  position: relative;
+  display: inline-block;
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+}
+
+.tool-checkbox-wrapper input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.checkbox-visual {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 20px;
+  width: 20px;
+  background-color: var(--Neutral-30);
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.tool-checkbox-wrapper input:checked ~ .checkbox-visual {
+  background-color: var(--Blue-500);
+}
+
+.checkbox-visual:after {
+  content: '';
+  position: absolute;
+  display: none;
+}
+
+.tool-checkbox-wrapper input:checked ~ .checkbox-visual:after {
+  display: block;
+}
+
+.checkbox-visual:after {
+  left: 7px;
+  top: 3px;
+  width: 5px;
+  height: 10px;
+  border: solid white;
+  border-width: 0 3px 3px 0;
+  transform: rotate(45deg);
+}
+
+.tool-name-text {
+  flex-grow: 1;
+  cursor: pointer;
+  color: var(--Neutral-90);
+}
+
+.tool-actions {
+  display: flex;
+  gap: 4px;
+}
+
+.tool-actions button {
+  color: var(--Neutral-60);
+}
+.tool-actions button:hover {
+  color: var(--Neutral-90);
+}
+
+.add-tool-button {
+  margin-top: 12px;
+  width: 100%;
+  justify-content: center;
+  padding: 10px;
+  background-color: var(--Neutral-20);
+  border-radius: 8px;
+}
+
+.add-tool-button:hover {
+  background-color: var(--Neutral-30);
+}
+
+/* Modal styles */
+.modalShroud {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 2000;
+}
+
+.modal {
+  background: var(--Neutral-10);
+  border-radius: 16px;
+  padding: 24px;
+  width: 90%;
+  max-width: 600px;
+  border: 1px solid var(--border-stroke);
+  position: relative;
+}
+
+.modalClose {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--Neutral-60);
+}
+.modalClose:hover {
+  color: var(--text);
+}
+
+.modalContent {
+  margin-top: 20px;
+}
+
+/* ToolEditorModal styles */
+.tool-editor-modal h2 {
+  margin-top: 0;
+  margin-bottom: 24px;
+}
+
+.tool-editor-modal .form-field {
+  margin-bottom: 16px;
+}
+
+.tool-editor-modal label {
+  display: block;
+  margin-bottom: 8px;
+  color: var(--Neutral-80);
+}
+
+.tool-editor-modal input,
+.tool-editor-modal textarea,
+.tool-editor-modal select {
+  width: 100%;
+  padding: 10px;
+  background: var(--Neutral-15);
+  border: 1px solid var(--Neutral-30);
+  border-radius: 8px;
+  color: var(--text);
+  font-size: 1rem;
+}
+
+.tool-editor-modal textarea.json-editor {
+  min-height: 150px;
+  font-family: 'Roboto Mono', monospace;
+  font-size: 0.9rem;
+}
+
+.tool-editor-modal .scheduling-description {
+  font-size: 0.8rem;
+  color: var(--Neutral-60);
+  margin-top: 4px;
+}
+
+.tool-editor-modal .json-error {
+  color: var(--Red-400);
+  font-size: 0.9rem;
+  margin-top: 8px;
+}
+
+.tool-editor-modal .modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 24px;
+}
+
+.modal-actions .cancel-button {
+  padding: 10px 20px;
+  border-radius: 8px;
+  background: var(--Neutral-20);
+}
+
+.modal-actions .save-button {
+  padding: 10px 20px;
+  border-radius: 8px;
+  background: var(--Blue-500);
+  color: var(--Neutral-5);
+  font-weight: bold;
+}
+
+/* Responsive Styles */
+
+@media (max-width: 1024px) {
+  .participant-list {
+    position: fixed;
+    height: 100vh;
+    left: 0;
+    top: 0;
+    padding-top: 80px;
+    transform: translateX(-100%);
+    transition: transform 0.3s ease-in-out;
+    z-index: 1001;
+    box-shadow: 2px 0 10px rgba(0, 0, 0, 0.3);
+    border-right: 1px solid var(--border-stroke);
+  }
+  .participant-list.open {
+    transform: translateX(0);
+  }
+  .participant-toggle-button {
+    display: flex;
+  }
+}
+
+@media (min-width: 1025px) {
+  .participant-list {
+    display: flex !important;
+  }
+}
+
+@media (max-width: 768px) {
+  .header-text {
+    max-width: 250px;
+    overflow: hidden;
+  }
+
+  header h1 {
+    font-size: 1.1rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  header p {
+    display: none;
+  }
+
+  .user-info span {
+    display: none;
+  }
+
+  .webcam-container {
+    min-width: 0;
+  }
+
+  .streaming-console .main-app-area {
+    padding: 10px;
+    padding-bottom: 150px;
+  }
+
+  .subtitle-text {
+    font-size: 18px;
+  }
+}
+
+@media (max-width: 600px) {
+  .actions-nav {
+    flex-wrap: wrap;
+    justify-content: center;
+    width: 280px;
+    padding: 10px 16px;
+    gap: 8px;
+    border-radius: 20px;
+  }
+
+  .control-group {
+    gap: 2px;
+  }
+
+  .control-indicator {
+    font-size: 10px;
+  }
+}
+
+@media (max-width: 480px) {
+  .sidebar.open {
+    width: 90vw;
+  }
+
+  .participant-list {
+    width: 250px;
+  }
+
+  .header-left {
+    gap: 10px;
+  }
+
+  .header-right {
+    gap: 10px;
+  }
 }
