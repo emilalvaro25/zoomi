@@ -23,11 +23,8 @@ import ControlTray from './components/console/control-tray/ControlTray';
 import ErrorScreen from './components/demo/ErrorScreen';
 
 import { LiveAPIProvider } from './contexts/LiveAPIContext';
-import {
-  useUI,
-  useParticipantStore,
-} from './lib/state';
-import { useEffect } from 'react';
+import { useUI, useParticipantStore } from './lib/state';
+import { useEffect, useState, useCallback } from 'react';
 import ParticipantList from './components/participant-list/ParticipantList';
 import JoinScreen from './components/onboarding/JoinScreen';
 import SubtitleOverlay from './components/demo/subtitle-overlay/SubtitleOverlay';
@@ -37,27 +34,32 @@ import { supabase } from './lib/supabase';
 import { useAuth } from './lib/auth';
 import AuthScreen from './components/onboarding/AuthScreen';
 import MeetingGrid from './components/meeting-grid/MeetingGrid';
+import { translateText } from './lib/gemini';
+import { useLiveAPIContext } from './contexts/LiveAPIContext';
 
 const API_KEY = process.env.API_KEY as string;
 if (typeof API_KEY !== 'string') {
   throw new Error('Missing required environment variable: API_KEY');
 }
 
-/**
- * Main application component that provides a streaming interface for Live API.
- * Manages video streaming state and provides controls for webcam/screen capture.
- */
-function App() {
+function AppContent() {
   const { isFullScreen, setFullScreen, hasJoined, isParticipantListOpen } =
     useUI();
   const {
-    localParticipantId,
+    localParticipant,
     setParticipants,
     addOrUpdateParticipant,
     removeParticipant,
     setLocalParticipantId,
   } = useParticipantStore();
   const { session, setSession } = useAuth();
+  const meetingId = useUI(state => state.meetingId);
+  const setMeetingId = useUI(state => state.setMeetingId);
+
+  const [translatedSubtitle, setTranslatedSubtitle] = useState('');
+  const [isSubtitleFinal, setIsSubtitleFinal] = useState(false);
+
+  const { client } = useLiveAPIContext();
 
   // Handle auth state changes
   useEffect(() => {
@@ -76,24 +78,37 @@ function App() {
     return () => subscription.unsubscribe();
   }, [setSession, setLocalParticipantId]);
 
+  // Handle meeting ID from URL
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const id = urlParams.get('meetingId');
+    if (id) {
+      setMeetingId(id);
+    }
+  }, [setMeetingId]);
+
+  // Handle fullscreen changes
   useEffect(() => {
     const handleFullScreenChange = () => {
       setFullScreen(!!document.fullscreenElement);
     };
-
     document.addEventListener('fullscreenchange', handleFullScreenChange);
-
     return () => {
       document.removeEventListener('fullscreenchange', handleFullScreenChange);
     };
   }, [setFullScreen]);
 
+  // Handle participant subscriptions
   useEffect(() => {
-    if (!hasJoined || !localParticipantId) return;
+    if (!hasJoined || !meetingId || !localParticipant?.uid) return;
 
     // Initial fetch of participants
     const fetchParticipants = async () => {
-      const { data, error } = await supabase.from('participants').select('*');
+      const { data, error } = await supabase
+        .from('participants')
+        .select('*')
+        .eq('meeting_id', meetingId);
+
       if (error) {
         console.error('Error fetching participants:', error);
         return;
@@ -101,10 +116,12 @@ function App() {
       if (data) {
         const mappedParticipants = data.map(p => ({
           uid: p.uid,
-          name: p.uid === localParticipantId ? `${p.name} (You)` : p.name,
+          name: p.uid === localParticipant.uid ? `${p.name} (You)` : p.name,
           isMuted: p.is_muted,
           isCameraOff: p.is_camera_off,
-          isLocal: p.uid === localParticipantId,
+          isLocal: p.uid === localParticipant.uid,
+          role: p.role,
+          language: p.language,
         }));
         setParticipants(mappedParticipants);
       }
@@ -113,10 +130,15 @@ function App() {
 
     // Set up realtime subscription
     const channel = supabase
-      .channel('participants')
+      .channel(`participants-${meetingId}`)
       .on(
         'postgres_changes',
-        { event: '*', schema: 'public', table: 'participants' },
+        {
+          event: '*',
+          schema: 'public',
+          table: 'participants',
+          filter: `meeting_id=eq.${meetingId}`,
+        },
         payload => {
           if (
             payload.eventType === 'INSERT' ||
@@ -125,10 +147,13 @@ function App() {
             const p = payload.new;
             addOrUpdateParticipant({
               uid: p.uid,
-              name: p.uid === localParticipantId ? `${p.name} (You)` : p.name,
+              name:
+                p.uid === localParticipant.uid ? `${p.name} (You)` : p.name,
               isMuted: p.is_muted,
               isCameraOff: p.is_camera_off,
-              isLocal: p.uid === localParticipantId,
+              isLocal: p.uid === localParticipant.uid,
+              role: p.role,
+              language: p.language,
             });
           } else if (payload.eventType === 'DELETE') {
             removeParticipant(payload.old.uid);
@@ -137,34 +162,137 @@ function App() {
       )
       .subscribe();
 
-    // Clean up on component unmount
     return () => {
       supabase.removeChannel(channel);
     };
   }, [
     hasJoined,
-    localParticipantId,
+    meetingId,
+    localParticipant?.uid,
     setParticipants,
     addOrUpdateParticipant,
     removeParticipant,
   ]);
 
+  // Host: Handle sending own transcription to DB
   useEffect(() => {
-    const handleBeforeUnload = async () => {
-      if (localParticipantId) {
+    if (localParticipant?.role !== 'host') return;
+
+    let lastMessageId: string | null = null;
+    const handleInputTranscription = async (text: string, isFinal: boolean) => {
+      if (!meetingId || !localParticipant.uid) return;
+
+      const messagePayload = {
+        meeting_id: meetingId,
+        participant_id: localParticipant.uid,
+        text,
+        is_final: isFinal,
+        source_language: 'English',
+      };
+
+      if (lastMessageId && !isFinal) {
+        // Update interim message
         await supabase
-          .from('participants')
-          .delete()
-          .eq('uid', localParticipantId);
+          .from('messages')
+          .update({ text })
+          .eq('id', lastMessageId);
+      } else {
+        // Insert new message
+        const { data } = await supabase
+          .from('messages')
+          .insert(messagePayload)
+          .select('id')
+          .single();
+        if (data) {
+          lastMessageId = data.id;
+        }
+      }
+      if (isFinal) {
+        lastMessageId = null;
       }
     };
 
-    window.addEventListener('beforeunload', handleBeforeUnload);
+    client.on('inputTranscription', handleInputTranscription);
+    return () => {
+      client.off('inputTranscription', handleInputTranscription);
+    };
+  }, [client, localParticipant, meetingId]);
 
+  // Student: Handle receiving host's transcription for translation
+  useEffect(() => {
+    if (localParticipant?.role !== 'student' || !localParticipant.language) {
+      return;
+    }
+
+    const speak = (text: string) => {
+      const utterance = new SpeechSynthesisUtterance(text);
+      // Find a voice that matches the student's language if possible
+      const voices = window.speechSynthesis.getVoices();
+      const studentLang = localParticipant.language?.split(' ')[0].toLowerCase();
+      const voice = voices.find(v => v.lang.toLowerCase().startsWith(studentLang));
+      if (voice) {
+        utterance.voice = voice;
+      }
+      window.speechSynthesis.speak(utterance);
+    };
+
+    const handleHostMessage = async (text: string, isFinal: boolean) => {
+      if (!localParticipant.language) return;
+      try {
+        const translated = await translateText(text, localParticipant.language);
+        setTranslatedSubtitle(translated);
+        setIsSubtitleFinal(isFinal);
+        if (isFinal) {
+          speak(translated);
+        }
+      } catch (error) {
+        console.error('Translation error:', error);
+      }
+    };
+
+    const channel = supabase
+      .channel(`messages-${meetingId}-student`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'messages',
+          filter: `meeting_id=eq.${meetingId}`,
+        },
+        async payload => {
+          const message = payload.new;
+          const host = useParticipantStore
+            .getState()
+            .participants.find(p => p.role === 'host');
+
+          if (host && message.participant_id === host.uid) {
+            handleHostMessage(message.text, message.is_final);
+          }
+        },
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [localParticipant, meetingId]);
+
+  // Graceful disconnect
+  useEffect(() => {
+    const handleBeforeUnload = async () => {
+      if (localParticipant?.uid) {
+        await supabase
+          .from('participants')
+          .delete()
+          .eq('uid', localParticipant.uid);
+      }
+    };
+    window.addEventListener('beforeunload', handleBeforeUnload);
     return () => {
       window.removeEventListener('beforeunload', handleBeforeUnload);
     };
-  }, [localParticipantId]);
+  }, [localParticipant?.uid]);
 
   if (!session) {
     return <AuthScreen />;
@@ -176,26 +304,38 @@ function App() {
 
   return (
     <div className={cn('App', { 'full-screen': isFullScreen })}>
-      <LiveAPIProvider apiKey={API_KEY}>
-        <Header />
-        <Sidebar />
-        <ErrorScreen />
-        <div className="app-layout">
-          <ParticipantList className={cn({ open: isParticipantListOpen })} />
-          <div className="streaming-console">
-            <main>
-              <div className="main-app-area">
-                <MeetingGrid />
-                <SubtitleOverlay />
-              </div>
-
-              <ControlTray></ControlTray>
-            </main>
-          </div>
+      <Header />
+      {localParticipant?.role === 'host' && <Sidebar />}
+      <ErrorScreen />
+      <div className="app-layout">
+        <ParticipantList className={cn({ open: isParticipantListOpen })} />
+        <div className="streaming-console">
+          <main>
+            <div className="main-app-area">
+              <MeetingGrid />
+              {localParticipant?.role === 'student' && (
+                <SubtitleOverlay
+                  text={translatedSubtitle}
+                  isFinal={isSubtitleFinal}
+                />
+              )}
+            </div>
+            <ControlTray />
+          </main>
         </div>
-      </LiveAPIProvider>
+      </div>
     </div>
   );
 }
 
-export default App;
+/**
+ * Main application component that provides a streaming interface for Live API.
+ * Manages video streaming state and provides controls for webcam/screen capture.
+ */
+export default function App() {
+  return (
+    <LiveAPIProvider apiKey={API_KEY}>
+      <AppContent />
+    </LiveAPIProvider>
+  );
+}

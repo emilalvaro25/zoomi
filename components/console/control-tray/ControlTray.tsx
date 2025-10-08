@@ -39,16 +39,13 @@ export type ControlTrayProps = {
 
 function ControlTray({ children }: ControlTrayProps) {
   const [audioRecorder] = useState(() => new AudioRecorder());
-  const [muted, setMuted] = useState(true);
+  const localParticipant = useParticipantStore(state => state.localParticipant);
+  const [muted, setMuted] = useState(localParticipant?.role === 'student');
   const connectButtonRef = useRef<HTMLButtonElement>(null);
   const { isFullScreen, toggleFullScreen } = useUI();
   const { effect, setEffect } = useCameraState();
-  const {
-    localParticipantId,
-    setMuted: setParticipantMuted,
-    participants,
-    setAllMuted,
-  } = useParticipantStore();
+  const { setMuted: setParticipantMuted, participants, setAllMuted } =
+    useParticipantStore();
   const [showEffects, setShowEffects] = useState(false);
   const [isAllMuted, setIsAllMuted] = useState(false);
 
@@ -78,11 +75,13 @@ function ControlTray({ children }: ControlTrayProps) {
   }, [connected]);
 
   useEffect(() => {
-    if (localParticipantId) {
-      // Muted is true if not connected or explicitly muted
-      setParticipantMuted(localParticipantId, !connected || muted);
+    if (localParticipant) {
+      // Muted is true if not connected or explicitly muted, or if student
+      const newMutedState =
+        !connected || muted || localParticipant.role === 'student';
+      setParticipantMuted(localParticipant.uid, newMutedState);
     }
-  }, [muted, connected, localParticipantId, setParticipantMuted]);
+  }, [muted, connected, localParticipant, setParticipantMuted]);
 
   useEffect(() => {
     const onData = (base64: string) => {
@@ -147,7 +146,9 @@ function ControlTray({ children }: ControlTrayProps) {
       disconnect();
     } else {
       connect();
-      setMuted(false); // Unmute on connect
+      if (localParticipant?.role === 'host') {
+        setMuted(false); // Unmute on connect for host
+      }
     }
   };
 
@@ -167,6 +168,9 @@ function ControlTray({ children }: ControlTrayProps) {
     : 'Mute all participants';
   const remoteParticipantsExist = participants.some(p => !p.isLocal);
 
+  const isHost = localParticipant?.role === 'host';
+  const isStudent = localParticipant?.role === 'student';
+
   return (
     <section className={cn('control-tray', { 'full-screen': isFullScreen })}>
       <nav className={cn('actions-nav')}>
@@ -174,9 +178,9 @@ function ControlTray({ children }: ControlTrayProps) {
           className={cn('action-button mic-button')}
           onClick={handleMicClick}
           title={micButtonTitle}
-          disabled={!connected}
+          disabled={!connected || isStudent}
         >
-          {muted ? (
+          {muted || isStudent ? (
             <span className="material-symbols-outlined filled">mic_off</span>
           ) : (
             <span className="material-symbols-outlined filled">mic</span>
@@ -191,7 +195,7 @@ function ControlTray({ children }: ControlTrayProps) {
             {videoEnabled ? 'videocam' : 'videocam_off'}
           </span>
         </button>
-        {remoteParticipantsExist && (
+        {isHost && remoteParticipantsExist && (
           <button
             className={cn('action-button')}
             onClick={handleMuteAllToggle}
@@ -245,22 +249,26 @@ function ControlTray({ children }: ControlTrayProps) {
             {isFullScreen ? 'fullscreen_exit' : 'fullscreen'}
           </span>
         </button>
-        <button
-          className={cn('action-button')}
-          onClick={handleExportLogs}
-          aria-label="Export Logs"
-          title="Export session logs"
-        >
-          <span className="icon">download</span>
-        </button>
-        <button
-          className={cn('action-button')}
-          onClick={useLogStore.getState().clearTurns}
-          aria-label="Reset Chat"
-          title="Reset session logs"
-        >
-          <span className="icon">refresh</span>
-        </button>
+        {isHost && (
+          <>
+            <button
+              className={cn('action-button')}
+              onClick={handleExportLogs}
+              aria-label="Export Logs"
+              title="Export session logs"
+            >
+              <span className="icon">download</span>
+            </button>
+            <button
+              className={cn('action-button')}
+              onClick={useLogStore.getState().clearTurns}
+              aria-label="Reset Chat"
+              title="Reset session logs"
+            >
+              <span className="icon">refresh</span>
+            </button>
+          </>
+        )}
         {children}
       </nav>
 

@@ -92,23 +92,13 @@ export default function Sidebar() {
                   ))}
                 </select>
               </label>
-              <label>
-                Language
-                <select
-                  value={language}
-                  onChange={e => setLocalLanguage(e.target.value)}
-                >
-                  {AVAILABLE_LANGUAGES.map(lang => (
-                    <option key={lang} value={lang}>
-                      {lang}
-                    </option>
-                  ))}
-                </select>
-              </label>
+              <p className="description" style={{fontSize: '12px', color: 'var(--Neutral-60)', marginTop: '-8px'}}>
+                Note: The voice setting applies to the translation audio for students. The language is set by each student upon joining.
+              </p>
             </fieldset>
           </div>
           <div className="sidebar-section transcript-section">
-            <h4 className="sidebar-section-title">Transcript</h4>
+            <h4 className="sidebar-section-title">Your Live Transcription</h4>
             <StreamingConsole />
           </div>
           <div className="sidebar-footer">

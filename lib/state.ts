@@ -16,6 +16,7 @@ import {
   LiveServerToolCall,
 } from '@google/genai';
 import { supabase } from './supabase';
+import { useAuth } from './auth';
 
 /**
  * Settings
@@ -56,16 +57,19 @@ export const useUI = create<{
   hasJoined: boolean;
   isSidebarOpen: boolean;
   isParticipantListOpen: boolean;
+  meetingId: string | null;
   setFullScreen: (isFullScreen: boolean) => void;
   toggleFullScreen: () => void;
   setHasJoined: (hasJoined: boolean) => void;
   toggleSidebar: () => void;
   toggleParticipantList: () => void;
+  setMeetingId: (id: string | null) => void;
 }>(set => ({
   isFullScreen: false,
   hasJoined: false,
   isSidebarOpen: false,
   isParticipantListOpen: window.innerWidth > 1024,
+  meetingId: null,
   setFullScreen: isFullScreen => set({ isFullScreen }),
   toggleFullScreen: () =>
     set(state => {
@@ -81,6 +85,7 @@ export const useUI = create<{
   toggleSidebar: () => set(state => ({ isSidebarOpen: !state.isSidebarOpen })),
   toggleParticipantList: () =>
     set(state => ({ isParticipantListOpen: !state.isParticipantListOpen })),
+  setMeetingId: id => set({ meetingId: id }),
 }));
 
 /**
@@ -168,13 +173,19 @@ export interface Participant {
   isMuted: boolean;
   isCameraOff: boolean;
   isLocal: boolean;
+  role: 'host' | 'student';
+  language?: string;
 }
 
 export const useParticipantStore = create<{
   participants: Participant[];
-  localParticipantId: string | null;
+  localParticipant: Participant | null;
   setLocalParticipantId: (uid: string | null) => void;
-  addLocalParticipant: (name: string) => void;
+  addLocalParticipant: (
+    name: string,
+    role: 'host' | 'student',
+    language?: string,
+  ) => void;
   setParticipants: (participants: Participant[]) => void;
   addOrUpdateParticipant: (participant: Participant) => void;
   removeParticipant: (uid: string) => void;
@@ -183,12 +194,27 @@ export const useParticipantStore = create<{
   setAllMuted: (isMuted: boolean) => Promise<void>;
 }>((set, get) => ({
   participants: [],
-  localParticipantId: null,
+  localParticipant: null,
   setLocalParticipantId: (uid: string | null) => {
-    set({ localParticipantId: uid });
+    if (uid) {
+      set(state => {
+        const p = state.participants.find(p => p.uid === uid && p.isLocal);
+        if (p) {
+          return { localParticipant: p };
+        }
+        return state;
+      });
+    } else {
+      set({ localParticipant: null });
+    }
   },
-  addLocalParticipant: (name: string) => {
-    const uid = get().localParticipantId;
+  addLocalParticipant: (
+    name: string,
+    role: 'host' | 'student',
+    language?: string,
+  ) => {
+    const { session } = useAuth.getState();
+    const uid = session?.user.id;
     if (!uid) {
       console.error('Cannot add local participant without a session.');
       return;
@@ -196,17 +222,20 @@ export const useParticipantStore = create<{
     const newParticipant: Participant = {
       uid,
       name: `${name} (You)`,
-      isMuted: true,
+      isMuted: role === 'student', // Students are muted by default
       isCameraOff: true,
       isLocal: true,
+      role,
+      language,
     };
-    set(state => ({
+    set(state => {
       // Avoid duplicates on re-join
-      participants: [
-        ...state.participants.filter(p => !p.isLocal),
-        newParticipant,
-      ],
-    }));
+      const otherParticipants = state.participants.filter(p => !p.isLocal);
+      return {
+        participants: [...otherParticipants, newParticipant],
+        localParticipant: newParticipant,
+      };
+    });
   },
   setParticipants: (participants: Participant[]) => {
     set({ participants });
@@ -214,14 +243,21 @@ export const useParticipantStore = create<{
   addOrUpdateParticipant: (participant: Participant) => {
     set(state => {
       const existing = state.participants.find(p => p.uid === participant.uid);
-      if (existing) {
-        return {
-          participants: state.participants.map(p =>
+      const newParticipants = existing
+        ? state.participants.map(p =>
             p.uid === participant.uid ? { ...p, ...participant } : p,
-          ),
-        };
-      }
-      return { participants: [...state.participants, participant] };
+          )
+        : [...state.participants, participant];
+
+      const newLocalParticipant =
+        participant.isLocal || participant.uid === state.localParticipant?.uid
+          ? participant
+          : state.localParticipant;
+
+      return {
+        participants: newParticipants,
+        localParticipant: newLocalParticipant,
+      };
     });
   },
   removeParticipant: (uid: string) => {
@@ -235,7 +271,8 @@ export const useParticipantStore = create<{
         p.uid === uid ? { ...p, isMuted } : p,
       ),
     }));
-    if (uid === get().localParticipantId) {
+    // Only local user can update their own status in DB
+    if (uid === get().localParticipant?.uid) {
       await supabase
         .from('participants')
         .update({ is_muted: isMuted })
@@ -248,7 +285,7 @@ export const useParticipantStore = create<{
         p.uid === uid ? { ...p, isCameraOff } : p,
       ),
     }));
-    if (uid === get().localParticipantId) {
+    if (uid === get().localParticipant?.uid) {
       await supabase
         .from('participants')
         .update({ is_camera_off: isCameraOff })
@@ -256,7 +293,7 @@ export const useParticipantStore = create<{
     }
   },
   setAllMuted: async (isMuted: boolean) => {
-    const localParticipantId = get().localParticipantId;
+    const localParticipantId = get().localParticipant?.uid;
     if (!localParticipantId) {
       console.error('Local participant not found. Cannot perform mute all.');
       return;

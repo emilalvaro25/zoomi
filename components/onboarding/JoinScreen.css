@@ -48,7 +48,8 @@
   margin-bottom: -8px;
 }
 
-.join-form input, .join-form select {
+.join-form input,
+.join-form select {
   padding: 12px;
   border-radius: 8px;
   border: 1px solid var(--Neutral-30);
@@ -57,7 +58,8 @@
   font-size: 16px;
 }
 
-.join-form input:focus, .join-form select:focus {
+.join-form input:focus,
+.join-form select:focus {
   outline: none;
   border-color: var(--Blue-500);
 }
@@ -86,7 +88,7 @@
 .permissions-info {
   font-size: 14px;
   color: var(--Neutral-50);
-  margin-bottom: 30px;
+  margin-top: 30px;
 }
 
 .permissions-info ul {
@@ -105,32 +107,47 @@
 }
 
 .share-link-container {
-    display: flex;
-    gap: 8px;
+  display: flex;
+  gap: 8px;
 }
 
 .share-link-container input {
-    flex-grow: 1;
-    padding: 10px;
-    border-radius: 8px;
-    border: 1px solid var(--Neutral-30);
-    background-color: var(--Neutral-15);
-    color: var(--Neutral-60);
-    font-size: 14px;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+  flex-grow: 1;
+  padding: 10px;
+  border-radius: 8px;
+  border: 1px solid var(--Neutral-30);
+  background-color: var(--Neutral-15);
+  color: var(--Neutral-60);
+  font-size: 14px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .share-link-container button {
-    padding: 0 12px;
-    border-radius: 8px;
-    background-color: var(--Neutral-20);
-    color: var(--Neutral-80);
-    cursor: pointer;
-    transition: background-color 0.2s ease;
+  padding: 0 12px;
+  border-radius: 8px;
+  background-color: var(--Neutral-20);
+  color: var(--Neutral-80);
+  cursor: pointer;
+  transition: background-color 0.2s ease;
 }
 
 .share-link-container button:hover {
-    background-color: var(--Neutral-30);
+  background-color: var(--Neutral-30);
+}
+
+/* Share Link Modal */
+.share-link-modal .modalContent {
+  text-align: center;
+}
+
+.share-link-modal h3 {
+  font-size: 22px;
+  margin-bottom: 12px;
+}
+
+.share-link-modal p {
+  color: var(--Neutral-60);
+  margin-bottom: 24px;
 }

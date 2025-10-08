@@ -1256,7 +1256,7 @@ header h1 {
 /* Responsive Styles */
 
 @media (max-width: 1024px) {
-  .participant-list {
+  .participant-list-container {
     position: fixed;
     height: 100vh;
     left: 0;
@@ -1268,7 +1268,7 @@ header h1 {
     box-shadow: 2px 0 10px rgba(0, 0, 0, 0.3);
     border-right: 1px solid var(--border-stroke);
   }
-  .participant-list.open {
+  .participant-list-container.open {
     transform: translateX(0);
   }
   .participant-toggle-button {
@@ -1277,7 +1277,7 @@ header h1 {
 }
 
 @media (min-width: 1025px) {
-  .participant-list {
+  .participant-list-container {
     display: flex !important;
   }
 }
@@ -1338,7 +1338,7 @@ header h1 {
     width: 90vw;
   }
 
-  .participant-list {
+  .participant-list-container {
     width: 250px;
   }
 
