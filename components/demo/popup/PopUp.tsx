@@ -14,15 +14,22 @@ const PopUp: React.FC<PopUpProps> = ({ onClose }) => {
   return (
     <div className="popup-overlay">
       <div className="popup-content">
-        <h2>Welcome to Native Audio Function Call Sandbox</h2>
-        <p>Your starting point for building with native audio and function calling.</p>
+        <h2>Welcome to Zoomi</h2>
+        <p>Your new video conferencing experience.</p>
         <p>To get started:</p>
         <ol>
-          <li><span className="icon">play_circle</span>Press Play to start streaming audio.</li>
-          <li><span className="icon">save_as</span>Copy this sandbox to create your own version.</li>
-          <li><span className="icon">auto_awesome</span>Use the Code Assistant to customize and test your creation.</li>
+          <li>
+            <span className="icon">videocam</span>Start your camera to join the
+            call.
+          </li>
+          <li>
+            <span className="icon">mic</span>Unmute your microphone to speak.
+          </li>
+          <li>
+            <span className="icon">group</span>See who else is in the meeting.
+          </li>
         </ol>
-        <button onClick={onClose}>Start Building</button>
+        <button onClick={onClose}>Get Started</button>
       </div>
     </div>
   );

@@ -25,7 +25,6 @@ import ErrorScreen from './components/demo/ErrorScreen';
 import { LiveAPIProvider } from './contexts/LiveAPIContext';
 import {
   useUI,
-  useCameraState,
   useParticipantStore,
 } from './lib/state';
 import WebcamView from './components/demo/webcam-view/WebcamView';
@@ -51,7 +50,6 @@ if (typeof API_KEY !== 'string') {
 function App() {
   const { isFullScreen, setFullScreen, hasJoined, isParticipantListOpen } =
     useUI();
-  const { lightType } = useCameraState();
   const {
     localParticipantId,
     setParticipants,
@@ -189,7 +187,6 @@ function App() {
               <div className="main-app-area">
                 <div className="webcam-container">
                   <WebcamView />
-                  <div className={cn('light-overlay', lightType)}></div>
                 </div>
                 <SubtitleOverlay />
               </div>

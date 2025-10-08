@@ -9,7 +9,7 @@ import { useCameraState } from '@/lib/state';
 
 export default function WebcamView() {
   const { videoRef, videoEnabled } = useLiveAPIContext();
-  const { zoom, effect } = useCameraState();
+  const { effect } = useCameraState();
 
   return (
     <div className={cn('webcam-view', { 'video-enabled': videoEnabled })}>
@@ -18,7 +18,6 @@ export default function WebcamView() {
         autoPlay
         playsInline
         muted
-        style={{ transform: `scale(${zoom})` }}
         className={cn({ [`effect-${effect}`]: effect !== 'none' })}
       />
       {!videoEnabled && (

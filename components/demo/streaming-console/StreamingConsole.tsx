@@ -68,8 +68,8 @@ export default function StreamingConsole() {
           },
         ],
       }));
-    
-    const fullSystemPrompt = `${systemPrompt} All your responses must be in ${language}.`;
+
+    const fullSystemPrompt = `${systemPrompt} Your sole task is to translate the user's speech into ${language}. Do not add any extra commentary, greetings, or explanations. Provide only the direct translation.`;
 
     // Using `any` for config to accommodate `speechConfig`, which is not in the
     // current TS definitions but is used in the working reference example.
@@ -186,14 +186,12 @@ export default function StreamingConsole() {
       <div className="transcription-view" ref={scrollRef}>
         {turns.length === 0 ? (
           <div className="empty-console-message">
-            <span className="icon">sound_detection_dog_barking</span>
+            <span className="icon">translate</span>
             <h2>Press Play and start talking...</h2>
-            <p>Try saying things like:</p>
-            <div className="example-prompts">
-              <div className="prompt">"Zoom in a bit"</div>
-              <div className="prompt">"Make the lighting warmer"</div>
-              <div className="prompt">"Set a cool blue light and zoom all the way out"</div>
-            </div>
+            <p>
+              Your speech will be translated into your selected language and
+              spoken back to you.
+            </p>
           </div>
         ) : (
           turns.map((t, i) => (

@@ -36,7 +36,7 @@ export const useSettings = create<{
 }>(
   persist(
     set => ({
-      systemPrompt: `You are a virtual production assistant for a live video stream. Your tasks are to control camera zoom and lighting using the provided tools based on user requests. A critical part of your role is to provide all your responses translated exclusively into the user's selected language.`,
+      systemPrompt: `You are a real-time, multilingual translator.`,
       model: DEFAULT_LIVE_API_MODEL,
       voice: DEFAULT_VOICE,
       language: AVAILABLE_LANGUAGES[0],
@@ -89,22 +89,11 @@ export const useUI = create<{
 /**
  * Camera State
  */
-export const ZOOM_LEVELS = [1, 1.25, 1.5, 1.75, 2];
-export const LIGHT_TYPES = ['none', 'warm', 'cool', 'daylight'];
-
 export const useCameraState = create<{
-  zoom: number;
-  lightType: string;
   effect: string;
-  setZoom: (zoom: number) => void;
-  setLightType: (lightType: string) => void;
   setEffect: (effect: string) => void;
 }>(set => ({
-  zoom: 1,
-  lightType: 'none',
   effect: 'none',
-  setZoom: zoom => set({ zoom: Math.max(1, zoom) }), // Ensure zoom is not less than 1
-  setLightType: lightType => set({ lightType }),
   setEffect: effect => set({ effect }),
 }));
 
@@ -140,7 +129,7 @@ export const useTools = create<{
   removeTool: (name: string) => void;
   updateTool: (name: string, updatedTool: FunctionCall) => void;
 }>((set, get) => ({
-  tools: virtualProductionTools,
+  tools: [],
   template: undefined,
   setTemplate: template =>
     set({

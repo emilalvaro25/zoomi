@@ -32,7 +32,6 @@ import { AudioStreamer } from '../../lib/audio-streamer';
 import { audioContext } from '../../lib/utils';
 import VolMeterWorket from '../../lib/worklets/vol-meter';
 import {
-  useCameraState,
   useLogStore,
   useParticipantStore,
   useSettings,
@@ -66,7 +65,6 @@ export function useLiveApi({
   );
 
   const audioStreamerRef = useRef<AudioStreamer | null>(null);
-  const { setZoom, setLightType } = useCameraState();
   const { localParticipantId, setCameraOff } = useParticipantStore();
 
   const [volume, setVolume] = useState(0);
@@ -138,20 +136,6 @@ export function useLiveApi({
           isFinal: true,
         });
 
-        // Handle specific tool calls
-        switch (fc.name) {
-          case 'set_camera_zoom':
-            if (typeof fc.args.level === 'number') {
-              setZoom(fc.args.level);
-            }
-            break;
-          case 'set_light_type':
-            if (typeof fc.args.type === 'string') {
-              setLightType(fc.args.type);
-            }
-            break;
-        }
-
         // Prepare the response
         functionResponses.push({
           id: fc.id,
@@ -187,7 +171,7 @@ export function useLiveApi({
       client.off('audio', onAudio);
       client.off('toolcall', onToolCall);
     };
-  }, [client, setZoom, setLightType]);
+  }, [client]);
 
   const connect = useCallback(async () => {
     if (!config) {

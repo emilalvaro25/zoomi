@@ -1,6 +1,6 @@
 {
   "name": "zoomi",
-  "description": "",
+  "description": "A video conferencing and collaboration tool.",
   "requestFramePermissions": [
     "microphone",
     "camera"

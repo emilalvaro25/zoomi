@@ -28,9 +28,7 @@ export default function Header() {
           <span className="icon">group</span>
         </button>
         <div className="header-text">
-          <h1>Native Audio Function Call Sandbox</h1>
-          <p>Copy the app and ask the Code Assistant to add function calls.</p>
-          <p>Build your own function call experiment.</p>
+          <h1>Zoomi</h1>
         </div>
       </div>
       <div className="header-right">

@@ -28,8 +28,6 @@ import {
   useLogStore,
   useUI,
   useCameraState,
-  ZOOM_LEVELS,
-  LIGHT_TYPES,
   useParticipantStore,
 } from '@/lib/state';
 
@@ -45,8 +43,7 @@ function ControlTray({ children }: ControlTrayProps) {
   const [muted, setMuted] = useState(true);
   const connectButtonRef = useRef<HTMLButtonElement>(null);
   const { isFullScreen, toggleFullScreen } = useUI();
-  const { zoom, lightType, effect, setZoom, setLightType, setEffect } =
-    useCameraState();
+  const { effect, setEffect } = useCameraState();
   const { localParticipantId, setMuted: setParticipantMuted } =
     useParticipantStore();
   const [showEffects, setShowEffects] = useState(false);
@@ -129,18 +126,6 @@ function ControlTray({ children }: ControlTrayProps) {
     URL.revokeObjectURL(url);
   };
 
-  const cycleZoom = () => {
-    const currentIndex = ZOOM_LEVELS.indexOf(zoom);
-    const nextIndex = (currentIndex + 1) % ZOOM_LEVELS.length;
-    setZoom(ZOOM_LEVELS[nextIndex]);
-  };
-
-  const cycleLight = () => {
-    const currentIndex = LIGHT_TYPES.indexOf(lightType);
-    const nextIndex = (currentIndex + 1) % LIGHT_TYPES.length;
-    setLightType(LIGHT_TYPES[nextIndex]);
-  };
-
   const handleConnectToggle = () => {
     if (connected) {
       disconnect();
@@ -186,26 +171,6 @@ function ControlTray({ children }: ControlTrayProps) {
             {videoEnabled ? 'videocam' : 'videocam_off'}
           </span>
         </button>
-        <div className="control-group">
-          <button
-            className={cn('action-button')}
-            onClick={cycleZoom}
-            title="Cycle camera zoom"
-          >
-            <span className="material-symbols-outlined filled">zoom_in</span>
-          </button>
-          <span className="control-indicator">{zoom.toFixed(2)}x</span>
-        </div>
-        <div className="control-group">
-          <button
-            className={cn('action-button')}
-            onClick={cycleLight}
-            title="Cycle light type"
-          >
-            <span className="material-symbols-outlined filled">lightbulb</span>
-          </button>
-          <span className="control-indicator">{lightType}</span>
-        </div>
         <div className="control-group">
           <button
             className={cn('action-button', { active: showEffects })}
