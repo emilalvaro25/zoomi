@@ -380,6 +380,16 @@ button .icon {
   border: 1px solid var(--Blue-500);
 }
 
+.action-button.end-meeting-button {
+  background-color: var(--Red-700);
+  color: var(--text);
+}
+.action-button.end-meeting-button:hover {
+  background-color: var(--Red-600);
+  border-color: var(--Red-400);
+}
+
+
 @property --volume {
   syntax: '<length>';
   inherit: false;

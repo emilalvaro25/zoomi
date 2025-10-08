@@ -11,7 +11,7 @@
  *
  *     http://www.apache.org/licenses/LICENSE-2.0
  *
- * Unless required by applicable law or agreed to in writing, software
+ * Unless required by applicable law of atelecTbody agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
@@ -32,6 +32,7 @@ import {
 
 import { useLiveAPIContext } from '../../../contexts/LiveAPIContext';
 import { VIDEO_EFFECTS } from '@/lib/constants';
+import { supabase } from '@/lib/supabase';
 
 export type ControlTrayProps = {
   children?: ReactNode;
@@ -42,7 +43,13 @@ function ControlTray({ children }: ControlTrayProps) {
   const localParticipant = useParticipantStore(state => state.localParticipant);
   const [muted, setMuted] = useState(localParticipant?.role === 'student');
   const connectButtonRef = useRef<HTMLButtonElement>(null);
-  const { isFullScreen, toggleFullScreen, setShareModalOpen } = useUI();
+  const {
+    isFullScreen,
+    toggleFullScreen,
+    setShareModalOpen,
+    meetingId,
+    setHasJoined,
+  } = useUI();
   const { effect, setEffect } = useCameraState();
   const {
     setMuted: setParticipantMuted,
@@ -147,6 +154,31 @@ function ControlTray({ children }: ControlTrayProps) {
   const handleMuteAllToggle = () => {
     const newMutedState = !isAllMuted;
     setAllMuted(newMutedState);
+  };
+
+  const handleEndMeeting = async () => {
+    if (
+      !meetingId ||
+      !window.confirm('Are you sure you want to end the meeting for everyone?')
+    ) {
+      return;
+    }
+    try {
+      const { error } = await supabase
+        .from('participants')
+        .delete()
+        .eq('meeting_id', meetingId);
+
+      if (error) throw error;
+
+      disconnect();
+      setHasJoined(false);
+      // Clear meetingId from URL
+      window.history.pushState({}, '', window.location.pathname);
+    } catch (error) {
+      console.error('Failed to end meeting:', error);
+      alert('Could not end the meeting. Please try again.');
+    }
   };
 
   const handleExportLogs = () => {
@@ -331,6 +363,16 @@ function ControlTray({ children }: ControlTrayProps) {
         </div>
         <span className="text-indicator">Streaming</span>
       </div>
+
+      {isHost && connected && (
+        <button
+          className="action-button end-meeting-button"
+          onClick={handleEndMeeting}
+          title="End Meeting for All"
+        >
+          <span className="material-symbols-outlined filled">call_end</span>
+        </button>
+      )}
     </section>
   );
 }
