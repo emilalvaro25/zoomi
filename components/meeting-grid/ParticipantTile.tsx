@@ -20,13 +20,18 @@ const ParticipantTile: React.FC<ParticipantTileProps> = ({ participant }) => {
       if (participant.isLocal) {
         return <WebcamView />;
       }
-      // For remote participants with video on, the tile's dark background serves as a placeholder.
-      return null;
+      // Placeholder for remote participant's video stream
+      return (
+        <div className="participant-placeholder">
+          <span className="avatar-icon icon">videocam</span>
+          <p className="placeholder-text">Remote video on</p>
+        </div>
+      );
     }
     // Camera is off for anyone.
     return (
       <div className="participant-placeholder">
-        <span className="avatar-icon icon">person</span>
+        <span className="avatar-icon icon">videocam_off</span>
       </div>
     );
   };

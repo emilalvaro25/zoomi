@@ -1,3 +1,7 @@
+/**
+ * @license
+ * SPDX-License-Identifier: Apache-2.0
+*/
 .participant-tile {
   position: relative;
   width: 100%;
@@ -25,14 +29,19 @@
   flex-direction: column;
   justify-content: center;
   align-items: center;
-  gap: 16px;
+  gap: 8px;
   width: 100%;
   height: 100%;
 }
 
 .participant-placeholder .avatar-icon {
-  font-size: 80px;
+  font-size: 64px;
   color: var(--Neutral-50);
+}
+
+.participant-placeholder .placeholder-text {
+  font-size: 14px;
+  color: var(--Neutral-60);
 }
 
 .participant-name-overlay {
