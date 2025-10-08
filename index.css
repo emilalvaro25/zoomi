@@ -868,6 +868,10 @@ header {
   height: 80px;
 }
 
+header h1 {
+  font-size: 1.5rem;
+}
+
 .header-left {
   display: flex;
   align-items: center;
@@ -1023,6 +1027,40 @@ header {
   font-weight: bold;
   margin-bottom: 16px;
   color: var(--Neutral-90);
+}
+
+.sidebar-footer {
+  margin-top: auto;
+  padding-top: 20px;
+  border-top: 1px solid var(--border-stroke);
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 12px;
+}
+
+.sidebar-footer .save-button {
+  padding: 10px 20px;
+  border-radius: 8px;
+  background: var(--Blue-500);
+  color: var(--Neutral-5);
+  font-weight: bold;
+}
+
+.sidebar-footer .save-button:hover:not(:disabled) {
+  background: var(--Blue-400);
+}
+
+.sidebar-footer .save-button:disabled {
+  background: var(--Neutral-30);
+  opacity: 1; /* Override default disabled opacity */
+  cursor: not-allowed;
+  color: var(--Neutral-60);
+}
+
+.sidebar-footer .saved-message {
+  color: var(--Green-500);
+  font-size: 14px;
 }
 
 .tools-list {

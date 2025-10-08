@@ -4,21 +4,44 @@
 */
 import { useSettings, useUI } from '@/lib/state';
 import c from 'classnames';
-import {
-  DEFAULT_LIVE_API_MODEL,
-  AVAILABLE_VOICES,
-  AVAILABLE_LANGUAGES,
-} from '@/lib/constants';
+import { AVAILABLE_VOICES, AVAILABLE_LANGUAGES } from '@/lib/constants';
 import { useLiveAPIContext } from '@/contexts/LiveAPIContext';
 import StreamingConsole from './demo/streaming-console/StreamingConsole';
-
-const AVAILABLE_MODELS = [DEFAULT_LIVE_API_MODEL];
+import { useEffect, useState } from 'react';
 
 export default function Sidebar() {
   const { isSidebarOpen, toggleSidebar } = useUI();
-  const { model, voice, language, setModel, setVoice, setLanguage } =
-    useSettings();
+  const {
+    voice: savedVoice,
+    language: savedLanguage,
+    setVoice,
+    setLanguage,
+  } = useSettings();
   const { connected } = useLiveAPIContext();
+  const [voice, setLocalVoice] = useState(savedVoice);
+  const [language, setLocalLanguage] = useState(savedLanguage);
+  const [isDirty, setIsDirty] = useState(false);
+  const [showSaved, setShowSaved] = useState(false);
+
+  useEffect(() => {
+    // When sidebar opens, reset local state to match global state
+    if (isSidebarOpen) {
+      setLocalVoice(savedVoice);
+      setLocalLanguage(savedLanguage);
+    }
+  }, [isSidebarOpen, savedVoice, savedLanguage]);
+
+  useEffect(() => {
+    setIsDirty(voice !== savedVoice || language !== savedLanguage);
+  }, [voice, language, savedVoice, savedLanguage]);
+
+  const handleSave = () => {
+    setVoice(voice);
+    setLanguage(language);
+    setShowSaved(true);
+    const timer = setTimeout(() => setShowSaved(false), 2000);
+    return () => clearTimeout(timer);
+  };
 
   return (
     <>
@@ -33,19 +56,8 @@ export default function Sidebar() {
           <div className="sidebar-section">
             <fieldset disabled={connected}>
               <label>
-                Model
-                <select value={model} onChange={e => setModel(e.target.value)}>
-                  {/* This is an experimental model name that should not be removed from the options. */}
-                  {AVAILABLE_MODELS.map(m => (
-                    <option key={m} value={m}>
-                      {m}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <label>
                 Voice
-                <select value={voice} onChange={e => setVoice(e.target.value)}>
+                <select value={voice} onChange={e => setLocalVoice(e.target.value)}>
                   {AVAILABLE_VOICES.map(v => (
                     <option key={v} value={v}>
                       {v}
@@ -57,7 +69,7 @@ export default function Sidebar() {
                 Language
                 <select
                   value={language}
-                  onChange={e => setLanguage(e.target.value)}
+                  onChange={e => setLocalLanguage(e.target.value)}
                 >
                   {AVAILABLE_LANGUAGES.map(lang => (
                     <option key={lang} value={lang}>
@@ -71,6 +83,16 @@ export default function Sidebar() {
           <div className="sidebar-section transcript-section">
             <h4 className="sidebar-section-title">Transcript</h4>
             <StreamingConsole />
+          </div>
+          <div className="sidebar-footer">
+            {showSaved && <span className="saved-message">Settings saved!</span>}
+            <button
+              className="save-button"
+              onClick={handleSave}
+              disabled={!isDirty || connected}
+            >
+              Save Settings
+            </button>
           </div>
         </div>
       </aside>
