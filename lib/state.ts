@@ -184,6 +184,8 @@ export interface Participant {
 export const useParticipantStore = create<{
   participants: Participant[];
   localParticipant: Participant | null;
+  speakingParticipantUid: string | null;
+  setSpeakingParticipant: (uid: string | null) => void;
   setLocalParticipantId: (uid: string | null) => void;
   addLocalParticipant: (
     name: string,
@@ -199,6 +201,9 @@ export const useParticipantStore = create<{
 }>((set, get) => ({
   participants: [],
   localParticipant: null,
+  speakingParticipantUid: null,
+  setSpeakingParticipant: (uid: string | null) =>
+    set({ speakingParticipantUid: uid }),
   setLocalParticipantId: (uid: string | null) => {
     if (uid) {
       set(state => {

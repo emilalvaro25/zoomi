@@ -44,8 +44,12 @@ function ControlTray({ children }: ControlTrayProps) {
   const connectButtonRef = useRef<HTMLButtonElement>(null);
   const { isFullScreen, toggleFullScreen, setShareModalOpen } = useUI();
   const { effect, setEffect } = useCameraState();
-  const { setMuted: setParticipantMuted, participants, setAllMuted } =
-    useParticipantStore();
+  const {
+    setMuted: setParticipantMuted,
+    participants,
+    setAllMuted,
+    setSpeakingParticipant,
+  } = useParticipantStore();
   const [showEffects, setShowEffects] = useState(false);
   const [isAllMuted, setIsAllMuted] = useState(false);
 
@@ -57,6 +61,37 @@ function ControlTray({ children }: ControlTrayProps) {
     toggleVideo,
     videoEnabled,
   } = useLiveAPIContext();
+
+  // Speaker Detection Effect
+  useEffect(() => {
+    if (localParticipant?.role !== 'host') return;
+
+    let speakingTimeout: number | null = null;
+
+    const handleVolume = (volume: number) => {
+      // Threshold to detect speech, adjust if necessary
+      if (volume > 0.02 && localParticipant) {
+        setSpeakingParticipant(localParticipant.uid);
+        if (speakingTimeout) {
+          clearTimeout(speakingTimeout);
+        }
+        speakingTimeout = window.setTimeout(() => {
+          setSpeakingParticipant(null);
+        }, 1500); // Keep indicator for 1.5s after speech stops
+      }
+    };
+
+    audioRecorder.on('volume', handleVolume);
+
+    return () => {
+      audioRecorder.off('volume', handleVolume);
+      if (speakingTimeout) {
+        clearTimeout(speakingTimeout);
+      }
+      // Ensure the speaking state is cleared on unmount
+      setSpeakingParticipant(null);
+    };
+  }, [audioRecorder, localParticipant, setSpeakingParticipant]);
 
   useEffect(() => {
     const remoteParticipants = participants.filter(p => !p.isLocal);

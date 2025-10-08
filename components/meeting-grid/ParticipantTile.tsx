@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
 */
 import React from 'react';
-import { Participant } from '@/lib/state';
+import { Participant, useParticipantStore } from '@/lib/state';
 import WebcamView from '../demo/webcam-view/WebcamView';
 import './ParticipantTile.css';
 import cn from 'classnames';
@@ -14,6 +14,10 @@ interface ParticipantTileProps {
 
 const ParticipantTile: React.FC<ParticipantTileProps> = ({ participant }) => {
   const isVideoOn = !participant.isCameraOff;
+  const speakingParticipantUid = useParticipantStore(
+    state => state.speakingParticipantUid,
+  );
+  const isSpeaking = participant.uid === speakingParticipantUid;
 
   const renderContent = () => {
     if (isVideoOn) {
@@ -37,7 +41,7 @@ const ParticipantTile: React.FC<ParticipantTileProps> = ({ participant }) => {
   };
 
   return (
-    <div className="participant-tile">
+    <div className={cn('participant-tile', { 'is-speaking': isSpeaking })}>
       {renderContent()}
 
       <div className="participant-name-overlay">
