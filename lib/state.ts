@@ -57,18 +57,21 @@ export const useUI = create<{
   hasJoined: boolean;
   isSidebarOpen: boolean;
   isParticipantListOpen: boolean;
+  isShareModalOpen: boolean;
   meetingId: string | null;
   setFullScreen: (isFullScreen: boolean) => void;
   toggleFullScreen: () => void;
   setHasJoined: (hasJoined: boolean) => void;
   toggleSidebar: () => void;
   toggleParticipantList: () => void;
+  setShareModalOpen: (isOpen: boolean) => void;
   setMeetingId: (id: string | null) => void;
 }>(set => ({
   isFullScreen: false,
   hasJoined: false,
   isSidebarOpen: false,
   isParticipantListOpen: window.innerWidth > 1024,
+  isShareModalOpen: false,
   meetingId: null,
   setFullScreen: isFullScreen => set({ isFullScreen }),
   toggleFullScreen: () =>
@@ -85,6 +88,7 @@ export const useUI = create<{
   toggleSidebar: () => set(state => ({ isSidebarOpen: !state.isSidebarOpen })),
   toggleParticipantList: () =>
     set(state => ({ isParticipantListOpen: !state.isParticipantListOpen })),
+  setShareModalOpen: isOpen => set({ isShareModalOpen: isOpen }),
   setMeetingId: id => set({ meetingId: id }),
 }));
 

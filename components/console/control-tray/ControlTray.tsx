@@ -42,7 +42,7 @@ function ControlTray({ children }: ControlTrayProps) {
   const localParticipant = useParticipantStore(state => state.localParticipant);
   const [muted, setMuted] = useState(localParticipant?.role === 'student');
   const connectButtonRef = useRef<HTMLButtonElement>(null);
-  const { isFullScreen, toggleFullScreen } = useUI();
+  const { isFullScreen, toggleFullScreen, setShareModalOpen } = useUI();
   const { effect, setEffect } = useCameraState();
   const { setMuted: setParticipantMuted, participants, setAllMuted } =
     useParticipantStore();
@@ -195,6 +195,15 @@ function ControlTray({ children }: ControlTrayProps) {
             {videoEnabled ? 'videocam' : 'videocam_off'}
           </span>
         </button>
+        {isHost && (
+          <button
+            className={cn('action-button')}
+            onClick={() => setShareModalOpen(true)}
+            title="Share Invite"
+          >
+            <span className="material-symbols-outlined filled">share</span>
+          </button>
+        )}
         {isHost && remoteParticipantsExist && (
           <button
             className={cn('action-button')}

@@ -1,21 +1,29 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useUI, useParticipantStore, useSettings } from '@/lib/state';
 import { AVAILABLE_LANGUAGES } from '@/lib/constants';
 import './JoinScreen.css';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/lib/auth';
-import ShareLinkModal from './ShareLinkModal';
 
 const JoinScreen: React.FC = () => {
   const [name, setName] = useState('');
-  const { setHasJoined } = useUI();
+  const { setHasJoined, setShareModalOpen } = useUI();
   const { addLocalParticipant } = useParticipantStore();
   const { language, setLanguage } = useSettings();
   const [error, setError] = useState('');
   const { session } = useAuth();
   const meetingId = useUI(state => state.meetingId);
   const setMeetingId = useUI(state => state.setMeetingId);
-  const [showShareModal, setShowShareModal] = useState(false);
+
+  // BUG FIX: Parse URL for meetingId as soon as the component mounts
+  // This prevents a race condition where a joining user is treated as a host
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const id = urlParams.get('meetingId');
+    if (id) {
+      setMeetingId(id);
+    }
+  }, [setMeetingId]);
 
   const isJoining = !!meetingId;
 
@@ -63,7 +71,7 @@ const JoinScreen: React.FC = () => {
       if (role === 'host') {
         const newUrl = `${window.location.origin}${window.location.pathname}?meetingId=${currentMeetingId}`;
         window.history.pushState({ path: newUrl }, '', newUrl);
-        setShowShareModal(true);
+        setShareModalOpen(true);
       }
     } catch (err: any) {
       console.error('Error joining:', err);
@@ -79,62 +87,59 @@ const JoinScreen: React.FC = () => {
   };
 
   return (
-    <>
-      <div className="join-screen-overlay">
-        <div className="join-screen-container">
-          <h2>{isJoining ? 'Join Meeting' : 'New Meeting'}</h2>
-          <p>
-            {isJoining
-              ? 'Set up your display name and language before joining.'
-              : 'Enter your name to start a new meeting as the host.'}
-          </p>
-          <div className="join-form">
-            <label htmlFor="join-name">Your Name</label>
-            <input
-              id="join-name"
-              type="text"
-              placeholder="Your name"
-              value={name}
-              onChange={e => setName(e.target.value)}
-            />
-            {isJoining && (
-              <>
-                <label htmlFor="join-language">Your Language</label>
-                <select
-                  id="join-language"
-                  value={language}
-                  onChange={e => setLanguage(e.target.value)}
-                >
-                  {AVAILABLE_LANGUAGES.map(lang => (
-                    <option key={lang} value={lang}>
-                      {lang}
-                    </option>
-                  ))}
-                </select>
-              </>
-            )}
+    <div className="join-screen-overlay">
+      <div className="join-screen-container">
+        <h2>{isJoining ? 'Join Meeting' : 'New Meeting'}</h2>
+        <p>
+          {isJoining
+            ? 'Set up your display name and language before joining.'
+            : 'Enter your name to start a new meeting as the host.'}
+        </p>
+        <div className="join-form">
+          <label htmlFor="join-name">Your Name</label>
+          <input
+            id="join-name"
+            type="text"
+            placeholder="Your name"
+            value={name}
+            onChange={e => setName(e.target.value)}
+          />
+          {isJoining && (
+            <>
+              <label htmlFor="join-language">Your Language</label>
+              <select
+                id="join-language"
+                value={language}
+                onChange={e => setLanguage(e.target.value)}
+              >
+                {AVAILABLE_LANGUAGES.map(lang => (
+                  <option key={lang} value={lang}>
+                    {lang}
+                  </option>
+                ))}
+              </select>
+            </>
+          )}
 
-            {error && <p className="error-text">{error}</p>}
-            <button onClick={handleJoin} className="join-button">
-              {isJoining ? 'Join Now' : 'Start New Meeting'}
-            </button>
-          </div>
+          {error && <p className="error-text">{error}</p>}
+          <button onClick={handleJoin} className="join-button">
+            {isJoining ? 'Join Now' : 'Start New Meeting'}
+          </button>
+        </div>
 
-          <div className="permissions-info">
-            <p>You'll be asked for permission to use your:</p>
-            <ul>
-              <li>
-                <span className="icon">mic</span> Microphone
-              </li>
-              <li>
-                <span className="icon">videocam</span> Camera
-              </li>
-            </ul>
-          </div>
+        <div className="permissions-info">
+          <p>You'll be asked for permission to use your:</p>
+          <ul>
+            <li>
+              <span className="icon">mic</span> Microphone
+            </li>
+            <li>
+              <span className="icon">videocam</span> Camera
+            </li>
+          </ul>
         </div>
       </div>
-      {showShareModal && <ShareLinkModal onClose={() => setShowShareModal(false)} />}
-    </>
+    </div>
   );
 };
 

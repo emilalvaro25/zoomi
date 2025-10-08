@@ -35,9 +35,14 @@ const Participant: React.FC<ParticipantProps> = ({ participant }) => {
         <span>{initial}</span>
       </div>
       <div className="participant-info">
-        <span className="participant-name" title={participant.name}>
-          {participant.name}
-        </span>
+        <div className="name-and-badge">
+          <span className="participant-name" title={participant.name}>
+            {participant.name}
+          </span>
+          {participant.role === 'host' && (
+            <span className="host-badge">Host</span>
+          )}
+        </div>
       </div>
       <div className="participant-status">
         {participant.isMuted ? (

@@ -36,6 +36,7 @@ import AuthScreen from './components/onboarding/AuthScreen';
 import MeetingGrid from './components/meeting-grid/MeetingGrid';
 import { translateText } from './lib/gemini';
 import { useLiveAPIContext } from './contexts/LiveAPIContext';
+import ShareLinkModal from './components/onboarding/ShareLinkModal';
 
 const API_KEY = process.env.API_KEY as string;
 if (typeof API_KEY !== 'string') {
@@ -43,8 +44,14 @@ if (typeof API_KEY !== 'string') {
 }
 
 function AppContent() {
-  const { isFullScreen, setFullScreen, hasJoined, isParticipantListOpen } =
-    useUI();
+  const {
+    isFullScreen,
+    setFullScreen,
+    hasJoined,
+    isParticipantListOpen,
+    isShareModalOpen,
+    setShareModalOpen,
+  } = useUI();
   const {
     localParticipant,
     setParticipants,
@@ -54,7 +61,6 @@ function AppContent() {
   } = useParticipantStore();
   const { session, setSession } = useAuth();
   const meetingId = useUI(state => state.meetingId);
-  const setMeetingId = useUI(state => state.setMeetingId);
 
   const [translatedSubtitle, setTranslatedSubtitle] = useState('');
   const [isSubtitleFinal, setIsSubtitleFinal] = useState(false);
@@ -77,15 +83,6 @@ function AppContent() {
 
     return () => subscription.unsubscribe();
   }, [setSession, setLocalParticipantId]);
-
-  // Handle meeting ID from URL
-  useEffect(() => {
-    const urlParams = new URLSearchParams(window.location.search);
-    const id = urlParams.get('meetingId');
-    if (id) {
-      setMeetingId(id);
-    }
-  }, [setMeetingId]);
 
   // Handle fullscreen changes
   useEffect(() => {
@@ -304,6 +301,7 @@ function AppContent() {
 
   return (
     <div className={cn('App', { 'full-screen': isFullScreen })}>
+      {isShareModalOpen && <ShareLinkModal onClose={() => setShareModalOpen(false)} />}
       <Header />
       {localParticipant?.role === 'host' && <Sidebar />}
       <ErrorScreen />

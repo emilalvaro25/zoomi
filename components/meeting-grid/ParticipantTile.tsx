@@ -43,6 +43,9 @@ const ParticipantTile: React.FC<ParticipantTileProps> = ({ participant }) => {
           {participant.isMuted ? 'mic_off' : 'mic'}
         </span>
         <span title={participant.name}>{participant.name}</span>
+        {participant.role === 'host' && (
+          <span className="host-badge">Host</span>
+        )}
       </div>
     </div>
   );
