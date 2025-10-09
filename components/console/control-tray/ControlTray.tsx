@@ -248,7 +248,9 @@ function ControlTray({ children }: ControlTrayProps) {
       disconnect();
       setHasJoined(false);
       // Clear meetingId from URL
-      window.history.pushState({}, '', window.location.pathname);
+      if (window.location.protocol !== 'blob:') {
+        window.history.pushState({}, '', window.location.pathname);
+      }
     } catch (error) {
       console.error('Failed to end meeting:', error);
       alert('Could not end the meeting. Please try again.');

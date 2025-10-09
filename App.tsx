@@ -92,7 +92,9 @@ function AppContent() {
         setMeetingId(null);
         setParticipants([]);
         setLocalParticipantUid(null);
-        window.history.pushState({}, '', window.location.pathname);
+        if (window.location.protocol !== 'blob:') {
+          window.history.pushState({}, '', window.location.pathname);
+        }
       }
       setSession(session);
     });

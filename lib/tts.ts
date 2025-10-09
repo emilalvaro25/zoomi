@@ -8,16 +8,17 @@ import { AudioStreamer } from './audio-streamer';
 import { audioContext, base64ToArrayBuffer } from './utils';
 import { useSettings } from './state';
 
-const API_KEY = process.env.API_KEY;
-if (!API_KEY) {
+const GEMINI_API_KEY = process.env.API_KEY;
+if (!GEMINI_API_KEY) {
   throw new Error('Missing required environment variable: API_KEY');
 }
-const ai = new GoogleGenAI({ apiKey: API_KEY });
+const ai = new GoogleGenAI({ apiKey: GEMINI_API_KEY });
 
 let ttsSession: Session | null = null;
 let audioStreamer: AudioStreamer | null = null;
 let isBusy = false;
 const textQueue: string[] = [];
+let abortController: AbortController | null = null;
 
 async function getAudioStreamer(): Promise<AudioStreamer> {
   if (audioStreamer) return audioStreamer;
@@ -95,6 +96,10 @@ export function speak(text: string) {
  */
 export function cancel() {
   textQueue.length = 0;
+  if (abortController) {
+    abortController.abort();
+    abortController = null;
+  }
   if (audioStreamer) {
     audioStreamer.stop();
     // Clear the onComplete callback to prevent it from firing
@@ -107,21 +112,17 @@ export function cancel() {
   isBusy = false; // Force reset state
 }
 
-async function synthesize(text: string) {
-  const streamer = await getAudioStreamer();
-  await streamer.resume(); // Ensure context is running
-
-  // Use the streamer's onComplete callback to drive the queue.
-  // This ensures the next chunk starts after the previous one finishes playing.
+async function synthesizeWithGemini(
+  text: string,
+  voice: string,
+  streamer: AudioStreamer,
+) {
   streamer.onComplete = () => {
     if (isBusy) {
       isBusy = false;
       processQueue();
     }
   };
-
-  const { voice, translationVolume } = useSettings.getState();
-  streamer.setVolume(translationVolume);
 
   const callbacks: LiveCallbacks = {
     onopen: () => {
@@ -154,16 +155,10 @@ async function synthesize(text: string) {
       if (ttsSession) {
         try { ttsSession.close(); } catch {}
       }
-      // If an error occurs, move to the next item
-      if (isBusy) {
-        isBusy = false;
-        processQueue();
-      }
+      streamer.onComplete();
     },
     onclose: () => {
       ttsSession = null;
-      // This callback just cleans up the session reference.
-      // The onComplete callback is now responsible for processing the next item.
     },
   };
 
@@ -188,10 +183,211 @@ async function synthesize(text: string) {
       callbacks,
     });
   } catch (error) {
-    console.error('Failed to connect TTS session:', error);
+    console.error('Failed to connect Gemini TTS session:', error);
+    streamer.onComplete();
+  }
+}
+
+async function synthesizeWithOpenAI(
+  text: string,
+  apiKey: string,
+  voice: string,
+  streamer: AudioStreamer,
+) {
+  const openAIVoice = voice.replace('OpenAI-', '').toLowerCase();
+  abortController = new AbortController();
+
+  try {
+    const response = await fetch('https://api.openai.com/v1/audio/speech', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${apiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: 'tts-1',
+        input: text,
+        voice: openAIVoice,
+        response_format: 'pcm', // signed 16-bit, 1-channel, 24kHz
+      }),
+      signal: abortController.signal,
+    });
+
+    if (!response.ok || !response.body) {
+      const errorBody = await response.text();
+      throw new Error(`HTTP error! status: ${response.status}, body: ${errorBody}`);
+    }
+
+    const reader = response.body.getReader();
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      streamer.addPCM16(value); // value is a Uint8Array
+    }
+    streamer.complete();
+  } catch (error) {
+    if ((error as Error).name !== 'AbortError') {
+      console.error('OpenAI TTS failed:', error);
+    }
+    streamer.onComplete();
+  } finally {
+    abortController = null;
+  }
+}
+
+async function synthesizeWithCartesia(
+  text: string,
+  apiKey: string,
+  voice: string,
+  streamer: AudioStreamer,
+) {
+  // This is a hypothetical API structure for Cartesia based on common streaming patterns.
+  abortController = new AbortController();
+  try {
+    const response = await fetch('https://api.cartesia.ai/v1/tts/stream', {
+      method: 'POST',
+      headers: {
+        'X-API-Key': apiKey,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        text,
+        voice_id: voice,
+        output_format: 'pcm_24000_base64',
+      }),
+      signal: abortController.signal,
+    });
+
+    if (!response.ok || !response.body) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = '';
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split('\n');
+      buffer = lines.pop() || ''; // Keep any incomplete line for the next chunk
+      for (const line of lines) {
+        if (line.trim() === '') continue;
+        try {
+          const parsed = JSON.parse(line);
+          if (parsed.audio_chunk) {
+            const data = base64ToArrayBuffer(parsed.audio_chunk);
+            streamer.addPCM16(new Uint8Array(data));
+          }
+        } catch (e) {
+          console.warn('Could not parse streaming JSON line:', line);
+        }
+      }
+    }
+    streamer.complete();
+  } catch (error) {
+    if ((error as Error).name !== 'AbortError') {
+      console.error('Cartesia TTS failed:', error);
+    }
+    streamer.onComplete();
+  } finally {
+    abortController = null;
+  }
+}
+
+async function synthesizeWithHuggingface(
+  text: string,
+  apiKey: string,
+  voice: string,
+  streamer: AudioStreamer,
+) {
+  // This is a hypothetical, non-streaming API call for Huggingface.
+  const modelId = `facebook/mms-tts-${voice.replace('HF-', '').toLowerCase()}`; // A guess at a model family
+  abortController = new AbortController();
+
+  try {
+    const response = await fetch(`https://api-inference.huggingface.co/models/${modelId}`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${apiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ inputs: text }),
+      signal: abortController.signal,
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    const audioBlob = await response.blob();
+    // We assume the blob is a WAV file and need to extract the raw PCM data.
+    // This is complex, so for this example, we'll assume it returns raw PCM if possible,
+    // otherwise this would need a WAV parser.
+    const arrayBuffer = await audioBlob.arrayBuffer();
+    streamer.addPCM16(new Uint8Array(arrayBuffer));
+    streamer.complete();
+  } catch (error) {
+    if ((error as Error).name !== 'AbortError') {
+      console.error('Huggingface TTS failed:', error);
+    }
+    streamer.onComplete();
+  } finally {
+    abortController = null;
+  }
+}
+
+async function synthesize(text: string) {
+  const streamer = await getAudioStreamer();
+  await streamer.resume();
+
+  streamer.onComplete = () => {
     if (isBusy) {
       isBusy = false;
       processQueue();
     }
+  };
+
+  const {
+    activeTtsProvider,
+    cartesiaApiKey,
+    huggingfaceApiKey,
+    openaiApiKey,
+    voice,
+    translationVolume,
+  } = useSettings.getState();
+
+  streamer.setVolume(translationVolume);
+
+  switch (activeTtsProvider) {
+    case 'Cartesia':
+      if (cartesiaApiKey) {
+        await synthesizeWithCartesia(text, cartesiaApiKey, voice, streamer);
+      } else {
+        console.error('Cartesia API key is missing.');
+        streamer.onComplete();
+      }
+      break;
+    case 'Huggingface':
+      console.warn('Huggingface TTS is a mock implementation and may not work.');
+      if (huggingfaceApiKey) {
+        await synthesizeWithHuggingface(text, huggingfaceApiKey, voice, streamer);
+      } else {
+        console.error('Huggingface API key is missing.');
+        streamer.onComplete();
+      }
+      break;
+    case 'OpenAI Realtime':
+      if (openaiApiKey) {
+        await synthesizeWithOpenAI(text, openaiApiKey, voice, streamer);
+      } else {
+        console.error('OpenAI API key is missing.');
+        streamer.onComplete();
+      }
+      break;
+    case 'Browser Default':
+    default:
+      await synthesizeWithGemini(text, voice, streamer);
+      break;
   }
 }

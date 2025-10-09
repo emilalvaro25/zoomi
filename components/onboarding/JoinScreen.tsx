@@ -97,10 +97,13 @@ const JoinScreen: React.FC = () => {
       setHasJoined(true);
 
       if (role === 'host') {
-        // To avoid cross-origin errors in sandboxed environments (like blob: URLs),
-        // construct the new URL using the current pathname.
-        const newUrl = `${window.location.pathname}?meetingId=${currentMeetingId}`;
-        window.history.pushState({ path: newUrl }, '', newUrl);
+        // In some sandboxed environments (like blob: URLs), pushState is not allowed
+        // and will throw a security error. We'll avoid calling it in those cases.
+        // The meeting link is still available in the share modal.
+        if (window.location.protocol !== 'blob:') {
+          const newUrl = `${window.location.pathname}?meetingId=${currentMeetingId}`;
+          window.history.pushState({ path: newUrl }, '', newUrl);
+        }
         setShareModalOpen(true);
       }
     } catch (err: any) {
