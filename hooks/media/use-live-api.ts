@@ -61,7 +61,7 @@ export function useLiveApi({
 }: {
   apiKey: string;
 }): UseLiveApiResults {
-  const { model } = useSettings();
+  const { model, translationVolume, isTranslationEnabled } = useSettings();
   const client = useMemo(
     () => new GenAILiveClient(apiKey, model),
     [apiKey, model],
@@ -99,6 +99,15 @@ export function useLiveApi({
       });
     }
   }, [audioStreamerRef]);
+
+  // Sync audio streamer volume with global settings
+  useEffect(() => {
+    if (audioStreamerRef.current) {
+      audioStreamerRef.current.setVolume(
+        isTranslationEnabled ? translationVolume : 0,
+      );
+    }
+  }, [translationVolume, isTranslationEnabled]);
 
   useEffect(() => {
     const onOpen = () => {
@@ -196,6 +205,9 @@ export function useLiveApi({
   const connect = useCallback(async () => {
     if (!config) {
       throw new Error('config has not been set');
+    }
+    if (audioStreamerRef.current) {
+      await audioStreamerRef.current.resume();
     }
     client.disconnect();
     await client.connect(config);

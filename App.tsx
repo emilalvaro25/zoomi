@@ -24,7 +24,7 @@ import ErrorScreen from './components/demo/ErrorScreen';
 
 import { LiveAPIProvider } from './contexts/LiveAPIContext';
 import { useUI, useParticipantStore, useSettings } from './lib/state';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import ParticipantList from './components/participant-list/ParticipantList';
 import JoinScreen from './components/onboarding/JoinScreen';
 import SubtitleOverlay from './components/demo/subtitle-overlay/SubtitleOverlay';
@@ -66,6 +66,7 @@ function AppContent() {
     setLocalParticipantUid,
     setRemoteVideoFrame,
     clearRemoteVideoFrame,
+    setSpeakingParticipant,
   } = useParticipantStore();
   const meetingId = useUI(state => state.meetingId);
   const { isTranslationEnabled, translationMode, isSyncedTranslation } =
@@ -77,6 +78,7 @@ function AppContent() {
   });
 
   const { client } = useLiveAPIContext();
+  const remoteSpeakerTimerRef = useRef<number | null>(null);
 
   // Handle auth state
   useEffect(() => {
@@ -348,6 +350,19 @@ function AppContent() {
           };
           // Don't process our own messages or chat messages
           if (message && message.participant_id !== localParticipant.uid) {
+            setSpeakingParticipant(message.participant_id);
+            if (remoteSpeakerTimerRef.current) {
+              clearTimeout(remoteSpeakerTimerRef.current);
+            }
+            remoteSpeakerTimerRef.current = window.setTimeout(() => {
+              // Avoid clearing if another speaker started talking
+              if (
+                useParticipantStore.getState().speakingParticipantUid ===
+                message.participant_id
+              ) {
+                setSpeakingParticipant(null);
+              }
+            }, 2500); // 2.5s indicator
             handleRemoteMessage(message.text, message.is_final);
           }
         },
@@ -364,6 +379,7 @@ function AppContent() {
     meetingId,
     isTranslationEnabled,
     translationMode,
+    setSpeakingParticipant,
   ]);
 
   // Graceful disconnect
