@@ -5,7 +5,7 @@ import { supabase } from '@/lib/supabase';
 
 const JoinScreen: React.FC = () => {
   const [name, setName] = useState('');
-  const { setHasJoined, setShareModalOpen } = useUI();
+  const { setHasJoined, setShareModalOpen, setScheduleModalOpen } = useUI();
   const { addLocalParticipant, setLocalParticipantUid } = useParticipantStore();
   const [error, setError] = useState('');
   const meetingId = useUI(state => state.meetingId);
@@ -120,7 +120,7 @@ const JoinScreen: React.FC = () => {
   };
 
   const handleScheduleMeeting = () => {
-    alert('Scheduling functionality will be implemented in a future update.');
+    setScheduleModalOpen(true);
   };
 
   return (

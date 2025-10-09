@@ -35,6 +35,7 @@ import MeetingGrid from './components/meeting-grid/MeetingGrid';
 import { translateText } from './lib/gemini';
 import { useLiveAPIContext } from './contexts/LiveAPIContext';
 import ShareLinkModal from './components/onboarding/ShareLinkModal';
+import ScheduleMeetingModal from './components/onboarding/ScheduleMeetingModal';
 import { useAuth } from './lib/auth';
 import StreamingConsole from './components/demo/streaming-console/StreamingConsole';
 import { cancel as cancelTTS, speak as speakWithTTS } from './lib/tts';
@@ -55,6 +56,8 @@ function AppContent() {
     isParticipantListOpen,
     isShareModalOpen,
     setShareModalOpen,
+    isScheduleModalOpen,
+    setScheduleModalOpen,
     setMeetingId,
     setIsSpeakerOnCooldown,
   } = useUI();
@@ -416,7 +419,14 @@ function AppContent() {
   }, [localParticipant?.uid, meetingId]);
 
   if (!hasJoined) {
-    return <JoinScreen />;
+    return (
+      <>
+        <JoinScreen />
+        {isScheduleModalOpen && (
+          <ScheduleMeetingModal onClose={() => setScheduleModalOpen(false)} />
+        )}
+      </>
+    );
   }
 
   return (

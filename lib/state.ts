@@ -115,6 +115,7 @@ export const useUI = create<{
   isSidebarOpen: boolean;
   isParticipantListOpen: boolean;
   isShareModalOpen: boolean;
+  isScheduleModalOpen: boolean;
   meetingId: string | null;
   isServerSettingsUnlocked: boolean;
   countdown: number | null;
@@ -125,6 +126,7 @@ export const useUI = create<{
   toggleSidebar: () => void;
   toggleParticipantList: () => void;
   setShareModalOpen: (isOpen: boolean) => void;
+  setScheduleModalOpen: (isOpen: boolean) => void;
   setMeetingId: (id: string | null) => void;
   setServerSettingsUnlocked: (unlocked: boolean) => void;
   setCountdown: (countdown: number | null) => void;
@@ -135,6 +137,7 @@ export const useUI = create<{
   isSidebarOpen: false,
   isParticipantListOpen: window.innerWidth > 1024,
   isShareModalOpen: false,
+  isScheduleModalOpen: false,
   meetingId: null,
   isServerSettingsUnlocked: false,
   countdown: null,
@@ -155,6 +158,7 @@ export const useUI = create<{
   toggleParticipantList: () =>
     set(state => ({ isParticipantListOpen: !state.isParticipantListOpen })),
   setShareModalOpen: isOpen => set({ isShareModalOpen: isOpen }),
+  setScheduleModalOpen: isOpen => set({ isScheduleModalOpen: isOpen }),
   setMeetingId: id => set({ meetingId: id }),
   setServerSettingsUnlocked: unlocked =>
     set({ isServerSettingsUnlocked: unlocked }),

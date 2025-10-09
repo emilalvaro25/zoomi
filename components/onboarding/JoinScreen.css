@@ -49,17 +49,21 @@
 }
 
 .join-form input,
-.join-form select {
+.join-form select,
+.join-form textarea {
   padding: 12px;
   border-radius: 8px;
   border: 1px solid var(--Neutral-30);
   background-color: var(--Neutral-15);
   color: var(--text);
   font-size: 16px;
+  font-family: inherit;
+  resize: vertical;
 }
 
 .join-form input:focus,
-.join-form select:focus {
+.join-form select:focus,
+.join-form textarea:focus {
   outline: none;
   border-color: var(--Blue-500);
 }
@@ -74,6 +78,11 @@
   cursor: pointer;
   transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
   border: 1px solid transparent;
+  text-decoration: none;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
 }
 
 .join-button:hover {
@@ -163,4 +172,46 @@
 .share-link-modal p {
   color: var(--Neutral-60);
   margin-bottom: 24px;
+}
+
+/* Schedule Meeting Modal */
+.schedule-meeting-modal .modalContent {
+  text-align: center;
+}
+
+.schedule-meeting-modal h3 {
+  font-size: 24px;
+  margin-bottom: 12px;
+}
+
+.schedule-meeting-modal > p {
+  font-size: 16px;
+  color: var(--Neutral-60);
+  margin-bottom: 30px;
+}
+
+.schedule-meeting-modal .form-field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.schedule-meeting-modal .time-date-fields {
+  display: flex;
+  gap: 16px;
+}
+
+.schedule-meeting-modal .time-date-fields .form-field {
+  flex: 1;
+}
+
+.schedule-meeting-modal .confirmation-view {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  align-items: center;
+}
+
+.schedule-meeting-modal .download-button {
+  width: 100%;
 }
