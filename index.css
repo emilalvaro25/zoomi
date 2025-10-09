@@ -1024,6 +1024,19 @@ header h1 {
   font-weight: bold;
   margin-bottom: 16px;
   color: var(--Neutral-90);
+  margin-top: 10px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--border-stroke);
+  transition: color 0.2s ease;
+}
+
+.sidebar-section-title.clickable {
+  cursor: pointer;
+  user-select: none;
+}
+
+.sidebar-section-title.clickable:hover {
+  color: var(--Blue-400);
 }
 
 .sidebar-footer {
@@ -1058,6 +1071,31 @@ header h1 {
 .sidebar-footer .saved-message {
   color: var(--Green-500);
   font-size: 14px;
+}
+
+.add-voice-container {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.add-voice-container input {
+  flex-grow: 1;
+}
+
+.add-voice-container button {
+  padding: 10px 16px;
+  border-radius: 8px;
+  background-color: var(--Neutral-20);
+  color: var(--Neutral-80);
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  flex-shrink: 0;
+  justify-content: center;
+}
+
+.add-voice-container button:hover {
+  background-color: var(--Neutral-30);
 }
 
 .tools-list {

@@ -4,18 +4,26 @@
 */
 import { useParticipantStore, useSettings, useUI } from '@/lib/state';
 import c from 'classnames';
-import { AVAILABLE_VOICES, AVAILABLE_LANGUAGES } from '@/lib/constants';
+import { AVAILABLE_LANGUAGES } from '@/lib/constants';
 import { useLiveAPIContext } from '@/contexts/LiveAPIContext';
 // FIX: Import React to resolve namespace issue for React.ChangeEvent.
 import React, { useEffect, useState } from 'react';
 
 export default function Sidebar() {
-  const { isSidebarOpen, toggleSidebar, meetingId } = useUI();
+  const {
+    isSidebarOpen,
+    toggleSidebar,
+    meetingId,
+    isServerSettingsUnlocked,
+    setServerSettingsUnlocked,
+  } = useUI();
   const {
     voice: savedVoice,
     systemPrompt: savedSystemPrompt,
+    availableVoices,
     setVoice,
     setSystemPrompt,
+    addVoice,
   } = useSettings();
 
   const { localParticipant, setLanguage } = useParticipantStore();
@@ -26,6 +34,7 @@ export default function Sidebar() {
   const [isDirty, setIsDirty] = useState(false);
   const [showSaved, setShowSaved] = useState(false);
   const [isLinkCopied, setIsLinkCopied] = useState(false);
+  const [newVoiceName, setNewVoiceName] = useState('');
 
   const meetingLink = meetingId
     ? `${window.location.origin}/?meetingId=${meetingId}`
@@ -63,6 +72,23 @@ export default function Sidebar() {
     setTimeout(() => {
       setIsLinkCopied(false);
     }, 2000);
+  };
+
+  const handleAddNewVoice = () => {
+    if (newVoiceName.trim()) {
+      addVoice(newVoiceName.trim());
+      setNewVoiceName('');
+    }
+  };
+
+  const handleUnlockServerSettings = () => {
+    if (isServerSettingsUnlocked) return;
+    const code = prompt('Please enter the access code to view server settings:');
+    if (code === '1202AQ') {
+      setServerSettingsUnlocked(true);
+    } else if (code) {
+      alert('Incorrect access code.');
+    }
   };
 
   return (
@@ -115,7 +141,7 @@ export default function Sidebar() {
                   value={voice}
                   onChange={e => setLocalVoice(e.target.value)}
                 >
-                  {AVAILABLE_VOICES.map(v => (
+                  {availableVoices.map(v => (
                     <option key={v} value={v}>
                       {v}
                     </option>
@@ -134,6 +160,40 @@ export default function Sidebar() {
                 participants.
               </p>
             </fieldset>
+          </div>
+
+          <div className="sidebar-section">
+            <h4
+              className={c('sidebar-section-title', {
+                clickable: !isServerSettingsUnlocked,
+              })}
+              onClick={handleUnlockServerSettings}
+              title={isServerSettingsUnlocked ? '' : 'Click to unlock'}
+            >
+              Server Settings
+            </h4>
+            {isServerSettingsUnlocked && (
+              <fieldset disabled={connected}>
+                <label>
+                  Add New TTS Voice
+                  <div className="add-voice-container">
+                    <input
+                      type="text"
+                      placeholder="Enter voice name"
+                      value={newVoiceName}
+                      onChange={e => setNewVoiceName(e.target.value)}
+                      onKeyDown={e => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault();
+                          handleAddNewVoice();
+                        }
+                      }}
+                    />
+                    <button onClick={handleAddNewVoice}>Add</button>
+                  </div>
+                </label>
+              </fieldset>
+            )}
           </div>
 
           <div className="sidebar-footer">
