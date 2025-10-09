@@ -38,11 +38,18 @@ const JoinScreen: React.FC = () => {
       setError(`Authentication failed: ${signUpError.message}`);
       return;
     }
-    if (!signUpData.user) {
-      setError('Authentication failed: Could not create a user session.');
+    // If email confirmation is required, signUp doesn't return a session.
+    if (!signUpData.user || !signUpData.session) {
+      setError(
+        'Authentication failed. This can happen if email confirmation is enabled in your Supabase project. Please disable it or adjust RLS policies to allow new user sign-ups.',
+      );
       return;
     }
     const { id: uid } = signUpData.user;
+
+    // The Supabase client should automatically handle the session, but we can
+    // explicitly set it to avoid potential race conditions.
+    await supabase.auth.setSession(signUpData.session);
 
     try {
       await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
@@ -90,11 +97,10 @@ const JoinScreen: React.FC = () => {
       setHasJoined(true);
 
       if (role === 'host') {
-        // In sandboxed environments (like blob: URLs), pushState with an absolute URL
-        // fails. Using a relative URL that only contains the search parameters
-        // correctly updates the URL without causing a cross-origin error.
-        const newRelativeUrl = `?meetingId=${currentMeetingId}`;
-        window.history.pushState({ path: newRelativeUrl }, '', newRelativeUrl);
+        // To avoid cross-origin errors in sandboxed environments (like blob: URLs),
+        // construct the new URL using the current pathname.
+        const newUrl = `${window.location.pathname}?meetingId=${currentMeetingId}`;
+        window.history.pushState({ path: newUrl }, '', newUrl);
         setShareModalOpen(true);
       }
     } catch (err: any) {
