@@ -34,16 +34,9 @@ const ParticipantTile: React.FC<ParticipantTileProps> = ({ participant }) => {
   };
 
   const renderContent = () => {
-    // Local participant uses WebcamView with <video> element for smooth playback
+    // Local participant uses WebcamView, which handles its own placeholder
     if (participant.isLocal) {
-      return isVideoOn ? (
-        <WebcamView />
-      ) : (
-        <div className="participant-placeholder">
-          <span className="avatar-icon icon">videocam_off</span>
-          <p className="placeholder-text">Your camera is off</p>
-        </div>
-      );
+      return <WebcamView />;
     }
 
     // Remote participants use <img> for received frames

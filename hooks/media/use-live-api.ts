@@ -262,11 +262,7 @@ export function useLiveApi({
                 ]);
               }
               // Always broadcast frame to peers if video is enabled
-              // FIX: The correct channel state for a subscribed channel is 'joined'.
-              if (
-                videoChannelRef.current?.state === 'joined' &&
-                localParticipantUid
-              ) {
+              if (videoChannelRef.current && localParticipantUid) {
                 videoChannelRef.current.send({
                   type: 'broadcast',
                   event: 'frame',
