@@ -83,7 +83,9 @@ const JoinScreen: React.FC = () => {
       setHasJoined(true);
 
       if (role === 'host') {
-        const newUrl = `${window.location.origin}${window.location.pathname}?meetingId=${currentMeetingId}`;
+        const url = new URL(window.location.origin);
+        url.searchParams.set('meetingId', currentMeetingId);
+        const newUrl = url.toString();
         window.history.pushState({ path: newUrl }, '', newUrl);
         setShareModalOpen(true);
       }

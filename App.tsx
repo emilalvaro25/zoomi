@@ -36,6 +36,7 @@ import { translateText } from './lib/gemini';
 import { useLiveAPIContext } from './contexts/LiveAPIContext';
 import ShareLinkModal from './components/onboarding/ShareLinkModal';
 import { useAuth } from './lib/auth';
+import StreamingConsole from './components/demo/streaming-console/StreamingConsole';
 
 const API_KEY = process.env.API_KEY as string;
 if (typeof API_KEY !== 'string') {
@@ -337,6 +338,7 @@ function AppContent() {
             </div>
             <ControlTray />
           </main>
+          <StreamingConsole />
         </div>
       </div>
     </div>
