@@ -319,8 +319,19 @@ function AppContent() {
       return;
     }
 
-    const handleRemoteMessage = async (text: string, isFinal: boolean) => {
+    const handleRemoteMessage = async (
+      text: string,
+      isFinal: boolean,
+      sourceLanguage?: string,
+    ) => {
       if (!localParticipant.language || !text.trim()) return;
+
+      // If languages are the same, don't translate or speak, just show subtitle.
+      if (sourceLanguage && sourceLanguage === localParticipant.language) {
+        setActiveSubtitle({ text, isFinal });
+        return;
+      }
+
       try {
         const translated = await translateText(text, localParticipant.language);
         setActiveSubtitle({ text: translated, isFinal });
@@ -347,6 +358,7 @@ function AppContent() {
             text: string;
             is_final: boolean;
             participant_id: string;
+            source_language?: string;
           };
           // Don't process our own messages or chat messages
           if (message && message.participant_id !== localParticipant.uid) {
@@ -363,7 +375,11 @@ function AppContent() {
                 setSpeakingParticipant(null);
               }
             }, 2500); // 2.5s indicator
-            handleRemoteMessage(message.text, message.is_final);
+            handleRemoteMessage(
+              message.text,
+              message.is_final,
+              message.source_language,
+            );
           }
         },
       )

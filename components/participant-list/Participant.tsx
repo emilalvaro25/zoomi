@@ -43,31 +43,31 @@ const Participant: React.FC<ParticipantProps> = ({ participant }) => {
             <span className="host-badge">Host</span>
           )}
         </div>
-      </div>
-      <div className="participant-status">
-        {participant.isHandRaised && (
-          <span className="icon hand-raised" title="Hand Raised">
-            front_hand
-          </span>
-        )}
-        {participant.isMuted ? (
-          <span className="icon muted" title="Muted">
-            mic_off
-          </span>
-        ) : (
-          <span className="icon" title="Unmuted">
-            mic
-          </span>
-        )}
-        {participant.isCameraOff ? (
-          <span className="icon cam-off" title="Camera Off">
-            videocam_off
-          </span>
-        ) : (
-          <span className="icon" title="Camera On">
-            videocam
-          </span>
-        )}
+        <div className="participant-status">
+          {participant.isHandRaised && (
+            <span className="icon hand-raised" title="Hand Raised">
+              front_hand
+            </span>
+          )}
+          {participant.isMuted ? (
+            <span className="icon muted" title="Muted">
+              mic_off
+            </span>
+          ) : (
+            <span className="icon" title="Unmuted">
+              mic
+            </span>
+          )}
+          {participant.isCameraOff ? (
+            <span className="icon cam-off" title="Camera Off">
+              videocam_off
+            </span>
+          ) : (
+            <span className="icon" title="Camera On">
+              videocam
+            </span>
+          )}
+        </div>
       </div>
     </li>
   );

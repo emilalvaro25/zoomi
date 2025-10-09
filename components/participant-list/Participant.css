@@ -37,12 +37,16 @@
 .participant-info {
   flex-grow: 1;
   overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
 }
 
 .name-and-badge {
   display: flex;
   align-items: center;
   gap: 8px;
+  min-width: 0; /* Important for flex ellipsis */
 }
 
 .participant-name {
