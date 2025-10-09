@@ -60,7 +60,7 @@ export const useSettings = create<{
       voice: DEFAULT_VOICE,
       language: AVAILABLE_LANGUAGES[0],
       systemPrompt:
-        "You are a helpful meeting assistant. The user's language is {language}. Please keep your responses brief.",
+        'You are a helpful meeting assistant. Please keep your responses brief.',
       availableVoices: getInitialVoices(),
       cartesiaApiKey: '',
       huggingfaceApiKey: '',
