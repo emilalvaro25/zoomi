@@ -113,10 +113,13 @@ const supabaseKey =
 export const supabase = createClient<Database>(supabaseUrl, supabaseKey, {
   db: {
     schema: 'public',
+    // Disable the schema cache to ensure the client always has the latest schema.
+    // This resolves issues where the database schema is updated after the client
+    // has been initialized, preventing "column ... does not exist" errors.
+    schemaCache: {
+      get: () => null,
+      set: () => {},
+      remove: () => {},
+    } as any,
   },
-  realtime: {
-    params: {
-      log_level: 'debug'
-    }
-  }
 });
