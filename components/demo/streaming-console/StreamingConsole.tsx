@@ -11,7 +11,7 @@ import {
   useLogStore,
   ConversationTurn,
   useParticipantStore,
-} from '@/lib/state';
+} from '../../../lib/state';
 import { LiveServerContent } from '@google/genai';
 
 const formatTimestamp = (date: Date) => {

@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
 */
 import React, { useEffect, useState } from 'react';
-import { useUI, useSettings, useParticipantStore } from '@/lib/state';
+import { useUI, useSettings, useParticipantStore } from '../../lib/state';
 import './SyncIndicator.css';
 import cn from 'classnames';
 

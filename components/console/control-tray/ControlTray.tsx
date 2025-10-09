@@ -20,8 +20,7 @@
 
 import cn from 'classnames';
 
-// FIX: Import React to resolve namespace issue for React.CSSProperties.
-import React, { memo, ReactNode, useEffect, useRef, useState } from 'react';
+import { memo, ReactNode, useEffect, useRef, useState } from 'react';
 import { AudioRecorder } from '../../../lib/audio-recorder';
 import {
   useLogStore,
@@ -29,11 +28,11 @@ import {
   useCameraState,
   useParticipantStore,
   useSettings,
-} from '@/lib/state';
+} from '../../../lib/state';
 
 import { useLiveAPIContext } from '../../../contexts/LiveAPIContext';
-import { VIDEO_EFFECTS } from '@/lib/constants';
-import { supabase } from '@/lib/supabase';
+import { VIDEO_EFFECTS } from '../../../lib/constants';
+import { supabase } from '../../../lib/supabase';
 
 export type ControlTrayProps = {
   children?: ReactNode;
@@ -71,7 +70,6 @@ function ControlTray({ children }: ControlTrayProps) {
   } = useParticipantStore();
   const [showEffects, setShowEffects] = useState(false);
   const [isAllMuted, setIsAllMuted] = useState(false);
-  const [inputVolume, setInputVolume] = useState(0);
 
   const {
     client,
@@ -146,14 +144,12 @@ function ControlTray({ children }: ControlTrayProps) {
   useEffect(() => {
     if (!connected || muted) {
       setSpeakingParticipant(null);
-      setInputVolume(0);
       return;
     }
 
     let speakingTimeout: number | null = null;
 
     const handleVolume = (volume: number) => {
-      setInputVolume(volume);
       // Threshold to detect speech, adjust if necessary
       if (volume > 0.02 && localParticipant) {
         setSpeakingParticipant(localParticipant.uid);
@@ -175,7 +171,6 @@ function ControlTray({ children }: ControlTrayProps) {
       }
       // Ensure the speaking state is cleared on unmount
       setSpeakingParticipant(null);
-      setInputVolume(0);
     };
   }, [
     audioRecorder,
@@ -334,9 +329,6 @@ function ControlTray({ children }: ControlTrayProps) {
           onClick={handleMicClick}
           title={micButtonTitle}
           disabled={isMicDisabled}
-          style={
-            { '--volume': `${inputVolume * 40}px` } as React.CSSProperties
-          }
         >
           {muted || isMicDisabled ? (
             <span className="material-symbols-outlined filled">mic_off</span>

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { supabase } from '@/lib/supabase';
-import { useUI, useParticipantStore } from '@/lib/state';
+import { supabase } from '../../lib/supabase';
+import { useUI, useParticipantStore } from '../../lib/state';
 import ChatMessage, { Message } from './ChatMessage';
 
 const ChatBox: React.FC = () => {

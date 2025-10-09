@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { useUI, useParticipantStore } from '@/lib/state';
+import { useUI, useParticipantStore } from '../../lib/state';
 import './JoinScreen.css';
-import { supabase } from '@/lib/supabase';
+import { supabase } from '../../lib/supabase';
 
 const JoinScreen: React.FC = () => {
   const [name, setName] = useState('');

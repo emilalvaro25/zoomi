@@ -8,14 +8,14 @@ import {
   useUI,
   TranslationMode,
   VideoQuality,
-} from '@/lib/state';
+} from '../lib/state';
 import c from 'classnames';
 import {
   AVAILABLE_LANGUAGES,
   TTS_PROVIDERS,
   DEFAULT_VOICE,
-} from '@/lib/constants';
-import { useLiveAPIContext } from '@/contexts/LiveAPIContext';
+} from '../lib/constants';
+import { useLiveAPIContext } from '../contexts/LiveAPIContext';
 // FIX: Import React to resolve namespace issue for React.ChangeEvent.
 import React, { useEffect, useState, useMemo } from 'react';
 import {
@@ -26,7 +26,7 @@ import {
   CARTESIA_VOICES,
   HUGGINGFACE_VOICES,
   OPENAI_VOICES,
-} from '@/lib/voices';
+} from '../lib/voices';
 
 export default function Sidebar() {
   const {

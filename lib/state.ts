@@ -392,9 +392,15 @@ export const useParticipantStore = create<{
   },
   removeParticipant: (uid: string) => {
     get().clearRemoteVideoFrame(uid);
-    set(state => ({
-      participants: state.participants.filter(p => p.uid !== uid),
-    }));
+    set(state => {
+      // If the removed participant was pinned, unpin them.
+      const newPinnedUid =
+        state.pinnedParticipantUid === uid ? null : state.pinnedParticipantUid;
+      return {
+        participants: state.participants.filter(p => p.uid !== uid),
+        pinnedParticipantUid: newPinnedUid,
+      };
+    });
   },
   setMuted: async (uid, isMuted) => {
     set(state => ({

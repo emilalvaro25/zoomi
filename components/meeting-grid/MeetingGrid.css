@@ -9,13 +9,67 @@
   align-content: start;
 }
 
-/* Styles for when a participant is pinned */
-.meeting-grid.has-pinned {
-  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+/* New layout for pinned view */
+.pinned-layout {
+  display: flex;
+  flex-direction: row;
+  width: 100%;
+  height: 100%;
+  gap: 16px;
+  padding: 16px;
 }
 
-.meeting-grid.has-pinned .participant-tile.is-pinned {
-  grid-column: 1 / -1; /* Pinned tile takes full width */
-  min-height: 40vh; /* Ensure it has a larger height */
+.pinned-participant-container {
+  flex-grow: 1;
+  height: 100%;
+  display: flex;
+  min-width: 0; /* Prevents flex item from overflowing */
+}
+
+.pinned-participant-container .participant-tile {
+  width: 100%;
+  height: 100%;
   aspect-ratio: auto;
+}
+
+.unpinned-participants-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  width: 280px;
+  flex-shrink: 0;
+  height: 100%;
+  overflow-y: auto;
+}
+
+/* Responsive adjustments */
+@media (max-width: 1024px) {
+  .pinned-layout {
+    flex-direction: column;
+  }
+  .unpinned-participants-grid {
+    flex-direction: row;
+    width: 100%;
+    height: auto;
+    max-height: 200px; /* Limit height in column layout */
+    overflow-x: auto;
+    overflow-y: hidden;
+    padding-bottom: 8px; /* For scrollbar visibility */
+  }
+  .unpinned-participants-grid .participant-tile {
+    width: 200px;
+    height: calc(200px * 9 / 16);
+    flex-shrink: 0;
+  }
+  .pinned-participant-container {
+    flex-grow: 1; /* Takes remaining space */
+    height: auto;
+  }
+}
+
+@media (max-width: 768px) {
+  .unpinned-participants-grid .participant-tile {
+    width: 160px;
+    height: calc(160px * 9 / 16);
+  }
 }

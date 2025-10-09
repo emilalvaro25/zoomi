@@ -2,8 +2,8 @@
  * @license
  * SPDX-License-Identifier: Apache-2.0
 */
-import { useUI, useParticipantStore } from '@/lib/state';
-import { supabase } from '@/lib/supabase';
+import { useUI, useParticipantStore } from '../lib/state';
+import { supabase } from '../lib/supabase';
 
 export default function Header() {
   const { toggleSidebar, toggleParticipantList } = useUI();

@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
 */
 import React from 'react';
-import { useParticipantStore } from '@/lib/state';
+import { useParticipantStore } from '../../lib/state';
 import Participant from './Participant';
 import './ParticipantList.css';
 import cn from 'classnames';

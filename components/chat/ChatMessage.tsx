@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { useParticipantStore } from '@/lib/state';
-import { translateText } from '@/lib/gemini';
+import { useParticipantStore } from '../../lib/state';
+import { translateText } from '../../lib/gemini';
 import cn from 'classnames';
 
 export interface Message {

@@ -37,11 +37,11 @@ import {
   useSettings,
   useUI,
   VideoQuality,
-} from '@/lib/state';
-import { supabase } from '@/lib/supabase';
+} from '../../lib/state';
+import { supabase } from '../../lib/supabase';
 import { RealtimeChannel } from '@supabase/supabase-js';
 import { cancel as cancelTTS } from '../../lib/tts';
-import { AudioRecorder } from '@/lib/audio-recorder';
+import { AudioRecorder } from '../../lib/audio-recorder';
 
 export type UseLiveApiResults = {
   client: GenAILiveClient;
@@ -282,14 +282,10 @@ export function useLiveApi({
           displayStream.getTracks().forEach(track => {
             track.onended = () => {
               stopSystemAudioCapture();
-              // Revert to microphone if applicable
-              useSettings
-                .getState()
-                .setTranslationMode(
-                  useSettings.getState().translationMode === 'system'
-                    ? 'bidirectional'
-                    : useSettings.getState().translationMode,
-                );
+              // Revert to a sensible default if the user stops sharing via browser UI.
+              if (useSettings.getState().translationMode === 'system') {
+                useSettings.getState().setTranslationMode('bidirectional');
+              }
             };
           });
         } else {

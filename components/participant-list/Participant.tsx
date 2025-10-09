@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
 */
 import React from 'react';
-import { Participant as ParticipantType } from '@/lib/state';
+import { Participant as ParticipantType } from '../../lib/state';
 import './Participant.css';
 
 interface ParticipantProps {

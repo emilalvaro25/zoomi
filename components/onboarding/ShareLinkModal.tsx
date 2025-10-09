@@ -1,6 +1,6 @@
 import React from 'react';
 import Modal from '../Modal';
-import { useUI } from '@/lib/state';
+import { useUI } from '../../lib/state';
 
 interface ShareLinkModalProps {
   onClose: () => void;

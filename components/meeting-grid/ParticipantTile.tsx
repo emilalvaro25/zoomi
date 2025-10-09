@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
 */
 import React, { useEffect, useRef } from 'react';
-import { Participant, useParticipantStore, useUI } from '@/lib/state';
+import { Participant, useParticipantStore, useUI } from '../../lib/state';
 import WebcamView from '../demo/webcam-view/WebcamView';
 import './ParticipantTile.css';
 import cn from 'classnames';

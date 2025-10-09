@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
 */
 import { useEffect, useState } from 'react';
-import { FunctionCall } from '@/lib/state';
+import { FunctionCall } from '../lib/state';
 import Modal from './Modal';
 import { FunctionResponseScheduling } from '@google/genai';
 
