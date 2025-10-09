@@ -49,13 +49,18 @@ function ControlTray({ children }: ControlTrayProps) {
     setShareModalOpen,
     meetingId,
     setHasJoined,
+    isSpeakerOnCooldown,
+    setIsSpeakerOnCooldown,
+    setCountdown,
   } = useUI();
   const { effect, setEffect } = useCameraState();
-  const { isTranslationEnabled, toggleTranslation } = useSettings();
+  const { isTranslationEnabled, toggleTranslation, isSyncedTranslation } =
+    useSettings();
   const {
     setMuted: setParticipantMuted,
     participants,
     setAllMuted,
+    speakingParticipantUid,
     setSpeakingParticipant,
     setHandRaised,
   } = useParticipantStore();
@@ -70,6 +75,64 @@ function ControlTray({ children }: ControlTrayProps) {
     toggleVideo,
     videoEnabled,
   } = useLiveAPIContext();
+
+  const speechTimerRef = useRef<number | null>(null);
+  const countdownTimerRef = useRef<number | null>(null);
+
+  // Synced Translation Mode Effect
+  useEffect(() => {
+    const cleanupTimers = () => {
+      if (speechTimerRef.current) clearTimeout(speechTimerRef.current);
+      if (countdownTimerRef.current) clearInterval(countdownTimerRef.current);
+      speechTimerRef.current = null;
+      countdownTimerRef.current = null;
+      setCountdown(null);
+    };
+
+    if (
+      !isSyncedTranslation ||
+      localParticipant?.role !== 'host' ||
+      !connected ||
+      isSpeakerOnCooldown
+    ) {
+      cleanupTimers();
+      return;
+    }
+
+    const isSpeaking = speakingParticipantUid === localParticipant?.uid;
+
+    if (isSpeaking) {
+      if (!speechTimerRef.current && !countdownTimerRef.current) {
+        speechTimerRef.current = window.setTimeout(() => {
+          let count = 5;
+          setCountdown(count);
+          countdownTimerRef.current = window.setInterval(() => {
+            count -= 1;
+            setCountdown(count > 0 ? count : null);
+            if (count <= 0) {
+              clearInterval(countdownTimerRef.current!);
+              countdownTimerRef.current = null;
+              // Force mute and start cooldown
+              setMuted(true);
+              setIsSpeakerOnCooldown(true);
+            }
+          }, 1000);
+        }, 8000); // 8 second speech limit before countdown
+      }
+    } else {
+      cleanupTimers();
+    }
+
+    return cleanupTimers;
+  }, [
+    speakingParticipantUid,
+    localParticipant,
+    connected,
+    isSyncedTranslation,
+    isSpeakerOnCooldown,
+    setCountdown,
+    setIsSpeakerOnCooldown,
+  ]);
 
   // Speaker Detection Effect
   useEffect(() => {
@@ -103,7 +166,13 @@ function ControlTray({ children }: ControlTrayProps) {
       // Ensure the speaking state is cleared on unmount
       setSpeakingParticipant(null);
     };
-  }, [audioRecorder, localParticipant, setSpeakingParticipant, connected, muted]);
+  }, [
+    audioRecorder,
+    localParticipant,
+    setSpeakingParticipant,
+    connected,
+    muted,
+  ]);
 
   useEffect(() => {
     const remoteParticipants = participants.filter(
@@ -151,7 +220,7 @@ function ControlTray({ children }: ControlTrayProps) {
   }, [connected, client, muted, audioRecorder]);
 
   const handleMicClick = () => {
-    if (connected) {
+    if (connected && !isSpeakerOnCooldown) {
       setMuted(!muted);
     }
   };
@@ -202,7 +271,9 @@ function ControlTray({ children }: ControlTrayProps) {
     }
   };
 
-  const micButtonTitle = connected
+  const micButtonTitle = isSpeakerOnCooldown
+    ? 'Translating, please wait...'
+    : connected
     ? muted
       ? 'Unmute microphone'
       : 'Mute microphone'
@@ -236,7 +307,7 @@ function ControlTray({ children }: ControlTrayProps) {
           className={cn('action-button mic-button')}
           onClick={handleMicClick}
           title={micButtonTitle}
-          disabled={!connected}
+          disabled={!connected || isSpeakerOnCooldown}
         >
           {muted ? (
             <span className="material-symbols-outlined filled">mic_off</span>

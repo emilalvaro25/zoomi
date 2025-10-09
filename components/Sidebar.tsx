@@ -46,6 +46,7 @@ export default function Sidebar() {
     activeTtsProvider: savedTtsProvider,
     translationVolume: savedTranslationVolume,
     translationMode: savedTranslationMode,
+    isSyncedTranslation: savedIsSyncedTranslation,
     setVoice,
     setSystemPrompt,
     setAvailableVoices,
@@ -55,6 +56,7 @@ export default function Sidebar() {
     setActiveTtsProvider,
     setTranslationVolume,
     setTranslationMode,
+    setIsSyncedTranslation,
   } = useSettings();
 
   const { localParticipant, setLanguage } = useParticipantStore();
@@ -72,6 +74,9 @@ export default function Sidebar() {
     useState(savedTranslationVolume);
   const [translationMode, setLocalTranslationMode] =
     useState(savedTranslationMode);
+  const [isSyncedTranslation, setLocalIsSyncedTranslation] = useState(
+    savedIsSyncedTranslation,
+  );
 
   const [isDirty, setIsDirty] = useState(false);
   const [showSaved, setShowSaved] = useState(false);
@@ -143,6 +148,7 @@ export default function Sidebar() {
       setLocalActiveTtsProvider(savedTtsProvider);
       setLocalTranslationVolume(savedTranslationVolume);
       setLocalTranslationMode(savedTranslationMode);
+      setLocalIsSyncedTranslation(savedIsSyncedTranslation);
     }
   }, [
     isSidebarOpen,
@@ -154,6 +160,7 @@ export default function Sidebar() {
     savedTtsProvider,
     savedTranslationVolume,
     savedTranslationMode,
+    savedIsSyncedTranslation,
   ]);
 
   useEffect(() => {
@@ -165,7 +172,8 @@ export default function Sidebar() {
         openaiApiKey !== savedOpenAIKey ||
         activeTtsProvider !== savedTtsProvider ||
         translationVolume !== savedTranslationVolume ||
-        translationMode !== savedTranslationMode,
+        translationMode !== savedTranslationMode ||
+        isSyncedTranslation !== savedIsSyncedTranslation,
     );
   }, [
     voice,
@@ -178,12 +186,14 @@ export default function Sidebar() {
     activeTtsProvider,
     translationVolume,
     translationMode,
+    isSyncedTranslation,
     savedCartesiaKey,
     savedHuggingfaceKey,
     savedOpenAIKey,
     savedTtsProvider,
     savedTranslationVolume,
     savedTranslationMode,
+    savedIsSyncedTranslation,
   ]);
 
   const handleSave = () => {
@@ -195,6 +205,7 @@ export default function Sidebar() {
     setActiveTtsProvider(activeTtsProvider);
     setTranslationVolume(translationVolume);
     setTranslationMode(translationMode);
+    setIsSyncedTranslation(isSyncedTranslation);
     setShowSaved(true);
     const timer = setTimeout(() => setShowSaved(false), 2000);
     return () => clearTimeout(timer);
@@ -289,6 +300,28 @@ export default function Sidebar() {
                   }
                 />
               </label>
+              {localParticipant?.role === 'host' && (
+                <>
+                  <label className="toggle-label">
+                    Synced Translation Mode
+                    <label className="toggle-switch">
+                      <input
+                        type="checkbox"
+                        checked={isSyncedTranslation}
+                        onChange={e =>
+                          setLocalIsSyncedTranslation(e.target.checked)
+                        }
+                        disabled={connected}
+                      />
+                      <span className="toggle-slider"></span>
+                    </label>
+                  </label>
+                  <p className="description">
+                    Forces speakers to pause for translation playback to ensure
+                    clarity.
+                  </p>
+                </>
+              )}
               <label>
                 System Prompt
                 <textarea

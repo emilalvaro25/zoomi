@@ -38,6 +38,7 @@ export const useSettings = create<{
   isTranslationEnabled: boolean;
   translationVolume: number;
   translationMode: TranslationMode;
+  isSyncedTranslation: boolean;
   setModel: (model: string) => void;
   setVoice: (voice: string) => void;
   setLanguage: (language: string) => void;
@@ -51,6 +52,7 @@ export const useSettings = create<{
   toggleTranslation: () => void;
   setTranslationVolume: (volume: number) => void;
   setTranslationMode: (mode: TranslationMode) => void;
+  setIsSyncedTranslation: (isSynced: boolean) => void;
 }>()(
   persist(
     (set, get) => ({
@@ -67,6 +69,7 @@ export const useSettings = create<{
       isTranslationEnabled: true,
       translationVolume: 1.0,
       translationMode: 'bidirectional',
+      isSyncedTranslation: false,
       setModel: model => set({ model }),
       setVoice: voice => set({ voice }),
       setLanguage: language => set({ language }),
@@ -95,6 +98,7 @@ export const useSettings = create<{
         set(state => ({ isTranslationEnabled: !state.isTranslationEnabled })),
       setTranslationVolume: volume => set({ translationVolume: volume }),
       setTranslationMode: mode => set({ translationMode: mode }),
+      setIsSyncedTranslation: isSynced => set({ isSyncedTranslation: isSynced }),
     }),
     {
       name: 'zoom-settings-storage',
@@ -113,6 +117,8 @@ export const useUI = create<{
   isShareModalOpen: boolean;
   meetingId: string | null;
   isServerSettingsUnlocked: boolean;
+  countdown: number | null;
+  isSpeakerOnCooldown: boolean;
   setFullScreen: (isFullScreen: boolean) => void;
   toggleFullScreen: () => void;
   setHasJoined: (hasJoined: boolean) => void;
@@ -121,6 +127,8 @@ export const useUI = create<{
   setShareModalOpen: (isOpen: boolean) => void;
   setMeetingId: (id: string | null) => void;
   setServerSettingsUnlocked: (unlocked: boolean) => void;
+  setCountdown: (countdown: number | null) => void;
+  setIsSpeakerOnCooldown: (isCooldown: boolean) => void;
 }>(set => ({
   isFullScreen: false,
   hasJoined: false,
@@ -129,6 +137,8 @@ export const useUI = create<{
   isShareModalOpen: false,
   meetingId: null,
   isServerSettingsUnlocked: false,
+  countdown: null,
+  isSpeakerOnCooldown: false,
   setFullScreen: isFullScreen => set({ isFullScreen }),
   toggleFullScreen: () =>
     set(state => {
@@ -148,6 +158,8 @@ export const useUI = create<{
   setMeetingId: id => set({ meetingId: id }),
   setServerSettingsUnlocked: unlocked =>
     set({ isServerSettingsUnlocked: unlocked }),
+  setCountdown: countdown => set({ countdown }),
+  setIsSpeakerOnCooldown: isCooldown => set({ isSpeakerOnCooldown: isCooldown }),
 }));
 
 /**

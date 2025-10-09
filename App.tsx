@@ -38,6 +38,7 @@ import ShareLinkModal from './components/onboarding/ShareLinkModal';
 import { useAuth } from './lib/auth';
 import StreamingConsole from './components/demo/streaming-console/StreamingConsole';
 import { cancel as cancelTTS, speak as speakWithTTS } from './lib/tts';
+import SyncIndicator from './components/sync-indicator/SyncIndicator';
 
 const API_KEY = process.env.API_KEY as string;
 if (typeof API_KEY !== 'string') {
@@ -55,6 +56,7 @@ function AppContent() {
     isShareModalOpen,
     setShareModalOpen,
     setMeetingId,
+    setIsSpeakerOnCooldown,
   } = useUI();
   const {
     localParticipant,
@@ -66,7 +68,8 @@ function AppContent() {
     clearRemoteVideoFrame,
   } = useParticipantStore();
   const meetingId = useUI(state => state.meetingId);
-  const { isTranslationEnabled, translationMode } = useSettings();
+  const { isTranslationEnabled, translationMode, isSyncedTranslation } =
+    useSettings();
 
   const [activeSubtitle, setActiveSubtitle] = useState({
     text: '',
@@ -255,6 +258,36 @@ function AppContent() {
       }
       if (isFinal) {
         lastMessageId = null;
+        // Cooldown logic for synced translation mode
+        if (
+          isSyncedTranslation &&
+          localParticipant?.role === 'host' &&
+          text.trim()
+        ) {
+          const remoteParticipants = useParticipantStore
+            .getState()
+            .participants.filter(p => !p.isLocal);
+          // Estimate based on first remote participant's language
+          const targetLanguage = remoteParticipants[0]?.language || 'Spanish';
+
+          try {
+            const translatedText = await translateText(text, targetLanguage);
+            // Estimate duration: ~15 chars/sec audio playback
+            const estimatedDurationMs = (translatedText.length / 15) * 1000;
+            const minimumCooldown = 2000; // 2s minimum
+            const cooldown = Math.max(estimatedDurationMs, minimumCooldown);
+
+            setTimeout(() => {
+              setIsSpeakerOnCooldown(false);
+            }, cooldown);
+          } catch (e) {
+            console.error(
+              'Cooldown translation failed, ending cooldown early.',
+              e,
+            );
+            setIsSpeakerOnCooldown(false);
+          }
+        }
       }
     };
 
@@ -262,7 +295,15 @@ function AppContent() {
     return () => {
       client.off('inputTranscription', handleInputTranscription);
     };
-  }, [client, hasJoined, localParticipant, meetingId, translationMode]);
+  }, [
+    client,
+    hasJoined,
+    localParticipant,
+    meetingId,
+    translationMode,
+    isSyncedTranslation,
+    setIsSpeakerOnCooldown,
+  ]);
 
   // Handle receiving remote transcriptions for translation
   useEffect(() => {
@@ -352,6 +393,7 @@ function AppContent() {
       <Header />
       <Sidebar />
       <ErrorScreen />
+      <SyncIndicator />
       <div className="app-layout">
         <ParticipantList className={cn({ open: isParticipantListOpen })} />
         <div className="streaming-console">
