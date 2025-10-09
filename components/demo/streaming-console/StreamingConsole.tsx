@@ -10,6 +10,7 @@ import {
   useSettings,
   useLogStore,
   ConversationTurn,
+  useParticipantStore,
 } from '@/lib/state';
 import { LiveServerContent } from '@google/genai';
 
@@ -49,7 +50,9 @@ const renderContent = (text: string) => {
 
 export default function StreamingConsole() {
   const { client, setConfig } = useLiveAPIContext();
-  const { voice, language, systemPrompt } = useSettings();
+  const { voice, systemPrompt } = useSettings();
+  const localParticipant = useParticipantStore(state => state.localParticipant);
+  const language = localParticipant?.language || 'English';
   const turns = useLogStore(state => state.turns);
   const scrollRef = useRef<HTMLDivElement>(null);
 

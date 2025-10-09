@@ -37,6 +37,7 @@ const ParticipantTile: React.FC<ParticipantTileProps> = ({ participant }) => {
       ) : (
         <div className="participant-placeholder">
           <span className="avatar-icon icon">videocam_off</span>
+          <p className="placeholder-text">Your camera is off</p>
         </div>
       );
     }

@@ -92,6 +92,12 @@
   padding-top: 6px;
 }
 
+.message-content .loading-translation {
+  font-style: italic;
+  color: var(--Neutral-60);
+  opacity: 0.8;
+}
+
 .chat-input-form {
   display: flex;
   gap: 8px;

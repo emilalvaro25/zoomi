@@ -18,45 +18,87 @@ interface ChatMessageProps {
 
 const ChatMessage: React.FC<ChatMessageProps> = ({ message }) => {
   const { participants, localParticipant } = useParticipantStore();
-  const [translatedText, setTranslatedText] = useState('');
+  const [translation, setTranslation] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
 
   const sender = participants.find(p => p.uid === message.participant_id);
   const isLocal = sender?.isLocal || false;
   const isHost = localParticipant?.role === 'host';
-  const isFromStudent = sender?.role === 'student';
+
+  const needsTranslation =
+    localParticipant?.language &&
+    message.source_language &&
+    localParticipant.language !== message.source_language;
 
   useEffect(() => {
-    const translateForHost = async () => {
-      if (isHost && isFromStudent && message.text) {
+    // Reset state for new messages
+    setTranslation(null);
+    setIsLoading(false);
+
+    if (needsTranslation && message.is_final && message.text.trim()) {
+      const performTranslation = async () => {
+        setIsLoading(true);
         try {
-          const translation = await translateText(message.text, 'English');
-          setTranslatedText(translation);
+          const translated = await translateText(
+            message.text,
+            localParticipant!.language!,
+          );
+          setTranslation(translated);
         } catch (error) {
           console.error('Chat translation error:', error);
-          setTranslatedText('Translation failed.');
+          setTranslation('Translation failed.');
+        } finally {
+          setIsLoading(false);
         }
-      }
-    };
-
-    if (message.is_final) {
-      translateForHost();
+      };
+      performTranslation();
     }
-  }, [isHost, isFromStudent, message.text, message.is_final]);
+  }, [
+    message.id, // Re-run effect when the message ID changes
+    message.text,
+    message.is_final,
+    needsTranslation,
+    localParticipant?.language,
+  ]);
 
   if (!sender) return null;
+
+  const renderContent = () => {
+    // Host sees original and translation
+    if (isHost) {
+      return (
+        <>
+          <span>{message.text}</span>
+          {isLoading && (
+            <div className="translated-text loading-translation">
+              Translating...
+            </div>
+          )}
+          {translation && <div className="translated-text">{translation}</div>}
+        </>
+      );
+    }
+
+    // Student sees only the relevant version
+    if (needsTranslation) {
+      if (isLoading) {
+        return <span className="loading-translation">Translating...</span>;
+      }
+      // Show translation, with original as a fallback on error
+      return <span>{translation || message.text}</span>;
+    }
+
+    // If no translation needed, show original text
+    return <span>{message.text}</span>;
+  };
 
   return (
     <div className="chat-message">
       <div className={cn('message-header', { local: isLocal })}>
         {sender.name}
       </div>
-      <div
-        className={cn('message-content', { interim: !message.is_final })}
-      >
-        <span>{message.text}</span>
-        {translatedText && (
-          <div className="translated-text">{translatedText}</div>
-        )}
+      <div className={cn('message-content', { interim: !message.is_final })}>
+        {renderContent()}
       </div>
     </div>
   );
