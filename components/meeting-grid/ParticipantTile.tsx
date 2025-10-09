@@ -2,7 +2,7 @@
  * @license
  * SPDX-License-Identifier: Apache-2.0
 */
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import { Participant, useParticipantStore, useUI } from '@/lib/state';
 import WebcamView from '../demo/webcam-view/WebcamView';
 import './ParticipantTile.css';
@@ -20,6 +20,8 @@ const ParticipantTile: React.FC<ParticipantTileProps> = ({ participant }) => {
     remoteVideoFrames,
   } = useParticipantStore();
   const { countdown } = useUI();
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const frameData = remoteVideoFrames[participant.uid];
 
   const isVideoOn = !participant.isCameraOff || participant.isScreenSharing;
   const isSpeaking = participant.uid === speakingParticipantUid;
@@ -27,6 +29,54 @@ const ParticipantTile: React.FC<ParticipantTileProps> = ({ participant }) => {
 
   const isAboutToEndTurn =
     isSpeaking && participant.isLocal && countdown !== null;
+
+  useEffect(() => {
+    if (participant.isLocal || !frameData || !canvasRef.current) return;
+
+    const canvas = canvasRef.current;
+    const context = canvas.getContext('2d');
+    if (!context) return;
+
+    const image = new Image();
+    image.src = `data:image/jpeg;base64,${frameData}`;
+    image.onload = () => {
+      canvas.width = canvas.offsetWidth;
+      canvas.height = canvas.offsetHeight;
+      context.clearRect(0, 0, canvas.width, canvas.height);
+
+      context.save();
+
+      // Handle mirroring for non-screenshare video
+      if (!participant.isScreenSharing) {
+        context.scale(-1, 1);
+        context.translate(-canvas.width, 0);
+      }
+
+      // Handle object-fit (cover vs contain)
+      const hRatio = canvas.width / image.width;
+      const vRatio = canvas.height / image.height;
+      const ratio = participant.isScreenSharing
+        ? Math.min(hRatio, vRatio) // contain
+        : Math.max(hRatio, vRatio); // cover
+
+      const centerShiftX = (canvas.width - image.width * ratio) / 2;
+      const centerShiftY = (canvas.height - image.height * ratio) / 2;
+
+      context.drawImage(
+        image,
+        0,
+        0,
+        image.width,
+        image.height,
+        centerShiftX,
+        centerShiftY,
+        image.width * ratio,
+        image.height * ratio,
+      );
+
+      context.restore();
+    };
+  }, [frameData, participant.isLocal, participant.isScreenSharing]);
 
   const handlePinClick = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -39,20 +89,12 @@ const ParticipantTile: React.FC<ParticipantTileProps> = ({ participant }) => {
       return <WebcamView />;
     }
 
-    // Remote participants use <img> for received frames
-    const frameData = remoteVideoFrames[participant.uid];
-
-    if ((isVideoOn || participant.isScreenSharing) && frameData) {
-      return (
-        <img
-          src={`data:image/jpeg;base64,${frameData}`}
-          className="remote-video-frame"
-          alt={`${participant.name}'s video`}
-        />
-      );
+    // Remote participants use <canvas> for received frames
+    if (isVideoOn) {
+      return <canvas ref={canvasRef} className="remote-video-canvas" />;
     }
 
-    // Placeholder if camera is off or no frame received yet
+    // Placeholder if camera is off
     return (
       <div className="participant-placeholder">
         <span className="avatar-icon icon">

@@ -35,15 +35,13 @@
   border: none;
 }
 
-.remote-video-frame {
+.remote-video-canvas {
   width: 100%;
   height: 100%;
-  object-fit: cover;
-  transform: scaleX(-1); /* Mirror the video like a webcam */
+  background-color: var(--Neutral-5);
 }
 
 /* Override styles for screen sharing */
-.participant-tile.is-screen-sharing .remote-video-frame,
 .participant-tile.is-screen-sharing .webcam-view video {
   transform: scaleX(1); /* Do not mirror screen share */
   object-fit: contain; /* Show the whole screen without cropping */
