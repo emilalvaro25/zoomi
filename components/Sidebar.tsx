@@ -4,7 +4,7 @@
 */
 import { useParticipantStore, useSettings, useUI } from '@/lib/state';
 import c from 'classnames';
-import { AVAILABLE_LANGUAGES } from '@/lib/constants';
+import { AVAILABLE_LANGUAGES, TTS_PROVIDERS } from '@/lib/constants';
 import { useLiveAPIContext } from '@/contexts/LiveAPIContext';
 // FIX: Import React to resolve namespace issue for React.ChangeEvent.
 import React, { useEffect, useState } from 'react';
@@ -21,9 +21,17 @@ export default function Sidebar() {
     voice: savedVoice,
     systemPrompt: savedSystemPrompt,
     availableVoices,
+    cartesiaApiKey: savedCartesiaKey,
+    huggingfaceApiKey: savedHuggingfaceKey,
+    openaiApiKey: savedOpenAIKey,
+    activeTtsProvider: savedTtsProvider,
     setVoice,
     setSystemPrompt,
     addVoice,
+    setCartesiaApiKey,
+    setHuggingfaceApiKey,
+    setOpenaiApiKey,
+    setActiveTtsProvider,
   } = useSettings();
 
   const { localParticipant, setLanguage } = useParticipantStore();
@@ -31,6 +39,13 @@ export default function Sidebar() {
   const { connected } = useLiveAPIContext();
   const [voice, setLocalVoice] = useState(savedVoice);
   const [systemPrompt, setLocalSystemPrompt] = useState(savedSystemPrompt);
+  const [cartesiaApiKey, setLocalCartesiaApiKey] = useState(savedCartesiaKey);
+  const [huggingfaceApiKey, setLocalHuggingfaceApiKey] =
+    useState(savedHuggingfaceKey);
+  const [openaiApiKey, setLocalOpenAIKey] = useState(savedOpenAIKey);
+  const [activeTtsProvider, setLocalActiveTtsProvider] =
+    useState(savedTtsProvider);
+
   const [isDirty, setIsDirty] = useState(false);
   const [showSaved, setShowSaved] = useState(false);
   const [isLinkCopied, setIsLinkCopied] = useState(false);
@@ -45,16 +60,52 @@ export default function Sidebar() {
     if (isSidebarOpen) {
       setLocalVoice(savedVoice);
       setLocalSystemPrompt(savedSystemPrompt);
+      setLocalCartesiaApiKey(savedCartesiaKey);
+      setLocalHuggingfaceApiKey(savedHuggingfaceKey);
+      setLocalOpenAIKey(savedOpenAIKey);
+      setLocalActiveTtsProvider(savedTtsProvider);
     }
-  }, [isSidebarOpen, savedVoice, savedSystemPrompt]);
+  }, [
+    isSidebarOpen,
+    savedVoice,
+    savedSystemPrompt,
+    savedCartesiaKey,
+    savedHuggingfaceKey,
+    savedOpenAIKey,
+    savedTtsProvider,
+  ]);
 
   useEffect(() => {
-    setIsDirty(voice !== savedVoice || systemPrompt !== savedSystemPrompt);
-  }, [voice, systemPrompt, savedVoice, savedSystemPrompt]);
+    setIsDirty(
+      voice !== savedVoice ||
+        systemPrompt !== savedSystemPrompt ||
+        cartesiaApiKey !== savedCartesiaKey ||
+        huggingfaceApiKey !== savedHuggingfaceKey ||
+        openaiApiKey !== savedOpenAIKey ||
+        activeTtsProvider !== savedTtsProvider,
+    );
+  }, [
+    voice,
+    systemPrompt,
+    savedVoice,
+    savedSystemPrompt,
+    cartesiaApiKey,
+    huggingfaceApiKey,
+    openaiApiKey,
+    activeTtsProvider,
+    savedCartesiaKey,
+    savedHuggingfaceKey,
+    savedOpenAIKey,
+    savedTtsProvider,
+  ]);
 
   const handleSave = () => {
     setVoice(voice);
     setSystemPrompt(systemPrompt);
+    setCartesiaApiKey(cartesiaApiKey);
+    setHuggingfaceApiKey(huggingfaceApiKey);
+    setOpenaiApiKey(openaiApiKey);
+    setActiveTtsProvider(activeTtsProvider);
     setShowSaved(true);
     const timer = setTimeout(() => setShowSaved(false), 2000);
     return () => clearTimeout(timer);
@@ -174,6 +225,47 @@ export default function Sidebar() {
             </h4>
             {isServerSettingsUnlocked && (
               <fieldset disabled={connected}>
+                <label>
+                  Active TTS Provider
+                  <select
+                    value={activeTtsProvider}
+                    onChange={e => setLocalActiveTtsProvider(e.target.value)}
+                  >
+                    {TTS_PROVIDERS.map(p => (
+                      <option key={p} value={p}>
+                        {p}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label>
+                  Cartesia API Key
+                  <input
+                    type="password"
+                    placeholder="Enter Cartesia API Key"
+                    value={cartesiaApiKey}
+                    onChange={e => setLocalCartesiaApiKey(e.target.value)}
+                  />
+                </label>
+                <label>
+                  Huggingface API Key
+                  <input
+                    type="password"
+                    placeholder="Enter Huggingface API Key"
+                    value={huggingfaceApiKey}
+                    onChange={e => setLocalHuggingfaceApiKey(e.target.value)}
+                  />
+                </label>
+                <label>
+                  OpenAI API Key
+                  <input
+                    type="password"
+                    placeholder="Enter OpenAI API Key"
+                    value={openaiApiKey}
+                    onChange={e => setLocalOpenAIKey(e.target.value)}
+                  />
+                </label>
+
                 <label>
                   Add New TTS Voice
                   <div className="add-voice-container">

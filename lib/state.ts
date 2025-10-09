@@ -10,6 +10,7 @@ import {
   DEFAULT_VOICE,
   AVAILABLE_LANGUAGES,
   INITIAL_AVAILABLE_VOICES,
+  TTS_PROVIDERS,
 } from './constants';
 import {
   FunctionResponse,
@@ -27,11 +28,19 @@ export const useSettings = create<{
   language: string;
   systemPrompt: string;
   availableVoices: string[];
+  cartesiaApiKey: string;
+  huggingfaceApiKey: string;
+  openaiApiKey: string;
+  activeTtsProvider: string;
   setModel: (model: string) => void;
   setVoice: (voice: string) => void;
   setLanguage: (language: string) => void;
   setSystemPrompt: (prompt: string) => void;
   addVoice: (voice: string) => void;
+  setCartesiaApiKey: (key: string) => void;
+  setHuggingfaceApiKey: (key: string) => void;
+  setOpenaiApiKey: (key: string) => void;
+  setActiveTtsProvider: (provider: string) => void;
 }>(
   persist(
     (set, get) => ({
@@ -41,6 +50,10 @@ export const useSettings = create<{
       systemPrompt:
         "Your sole task is to translate the user's speech into {language}. Do not add any extra commentary, greetings, or explanations. Provide only the direct translation.",
       availableVoices: INITIAL_AVAILABLE_VOICES,
+      cartesiaApiKey: '',
+      huggingfaceApiKey: '',
+      openaiApiKey: '',
+      activeTtsProvider: TTS_PROVIDERS[0],
       setModel: model => set({ model }),
       setVoice: voice => set({ voice }),
       setLanguage: language => set({ language }),
@@ -52,6 +65,10 @@ export const useSettings = create<{
           }));
         }
       },
+      setCartesiaApiKey: key => set({ cartesiaApiKey: key }),
+      setHuggingfaceApiKey: key => set({ huggingfaceApiKey: key }),
+      setOpenaiApiKey: key => set({ openaiApiKey: key }),
+      setActiveTtsProvider: provider => set({ activeTtsProvider: provider }),
     }),
     {
       name: 'zoom-settings-storage',

@@ -72,11 +72,24 @@
   font-weight: bold;
   font-size: 16px;
   cursor: pointer;
-  transition: background-color 0.2s ease;
+  transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+  border: 1px solid transparent;
 }
 
 .join-button:hover {
   background-color: var(--Blue-400);
+}
+
+.join-button.secondary-button {
+  background-color: transparent;
+  border: 1px solid var(--Neutral-30);
+  color: var(--Neutral-80);
+}
+
+.join-button.secondary-button:hover {
+  background-color: var(--Neutral-15);
+  border-color: var(--Neutral-50);
+  color: var(--text);
 }
 
 .error-text {

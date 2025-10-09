@@ -19,7 +19,7 @@ const JoinScreen: React.FC = () => {
     }
   }, [setMeetingId]);
 
-  const handleJoin = async () => {
+  const handleJoin = async (isHost = false) => {
     if (!name.trim()) {
       setError('Please enter your name.');
       return;
@@ -52,15 +52,22 @@ const JoinScreen: React.FC = () => {
         setMeetingId(currentMeetingId);
       }
 
-      // Determine role: first person in is host
-      const { data: existingParticipants, error: fetchError } = await supabase
-        .from('participants')
-        .select('uid')
-        .eq('meeting_id', currentMeetingId)
-        .limit(1);
+      let role: 'host' | 'student' = 'student';
+      if (isHost) {
+        role = 'host';
+      } else {
+        // Determine role: first person in is host if not explicitly joining
+        const { data: existingParticipants, error: fetchError } =
+          await supabase
+            .from('participants')
+            .select('uid')
+            .eq('meeting_id', currentMeetingId)
+            .limit(1);
 
-      if (fetchError) throw fetchError;
-      const role = existingParticipants.length > 0 ? 'student' : 'host';
+        if (fetchError) throw fetchError;
+        role = existingParticipants.length > 0 ? 'student' : 'host';
+      }
+
       const language = role === 'host' ? 'English' : 'Spanish'; // Default student language
 
       const { error: insertError } = await supabase
@@ -103,6 +110,10 @@ const JoinScreen: React.FC = () => {
     }
   };
 
+  const handleScheduleMeeting = () => {
+    alert('Scheduling functionality will be implemented in a future update.');
+  };
+
   return (
     <div className="join-screen-overlay">
       <div className="join-screen-container">
@@ -118,8 +129,20 @@ const JoinScreen: React.FC = () => {
             onChange={e => setName(e.target.value)}
           />
           {error && <p className="error-text">{error}</p>}
-          <button onClick={handleJoin} className="join-button">
+          <button onClick={() => handleJoin(false)} className="join-button">
             Join Meeting
+          </button>
+          <button
+            onClick={() => handleJoin(true)}
+            className="join-button secondary-button"
+          >
+            Host Meeting
+          </button>
+          <button
+            onClick={handleScheduleMeeting}
+            className="join-button secondary-button"
+          >
+            Schedule Meeting
           </button>
         </div>
         <div className="permissions-info">

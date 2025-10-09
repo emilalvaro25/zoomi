@@ -64,6 +64,13 @@ export const INITIAL_AVAILABLE_VOICES = [
   'Zubenelgenubi',
 ].sort();
 
+export const TTS_PROVIDERS = [
+  'Browser Default',
+  'Cartesia',
+  'Huggingface',
+  'OpenAI Realtime',
+];
+
 export const AVAILABLE_LANGUAGES = [
   'Afrikaans',
   'Albanian',
