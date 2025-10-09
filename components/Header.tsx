@@ -2,10 +2,16 @@
  * @license
  * SPDX-License-Identifier: Apache-2.0
 */
-import { useUI } from '@/lib/state';
+import { useUI, useParticipantStore } from '@/lib/state';
+import { supabase } from '@/lib/supabase';
 
 export default function Header() {
   const { toggleSidebar, toggleParticipantList } = useUI();
+  const { localParticipant } = useParticipantStore();
+
+  const handleSignOut = async () => {
+    await supabase.auth.signOut();
+  };
 
   return (
     <header>
@@ -20,6 +26,14 @@ export default function Header() {
         <h1>Zoomi</h1>
       </div>
       <div className="header-right">
+        {localParticipant && (
+          <div className="user-info">
+            <span>{localParticipant.name}</span>
+            <button onClick={handleSignOut} className="signout-button">
+              Sign Out
+            </button>
+          </div>
+        )}
         <button
           className="settings-button"
           onClick={toggleSidebar}

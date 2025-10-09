@@ -26,7 +26,23 @@ const JoinScreen: React.FC = () => {
     }
     setError('');
 
-    const uid = crypto.randomUUID();
+    // Auto-auth: sign up and sign in a new anonymous user
+    const email = `${crypto.randomUUID()}@example.com`;
+    const password = crypto.randomUUID(); // Use a secure random password
+    const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
+      email,
+      password,
+    });
+
+    if (signUpError) {
+      setError(`Authentication failed: ${signUpError.message}`);
+      return;
+    }
+    if (!signUpData.user) {
+      setError('Authentication failed: Could not create a user session.');
+      return;
+    }
+    const { id: uid } = signUpData.user;
 
     try {
       await navigator.mediaDevices.getUserMedia({ video: true, audio: true });

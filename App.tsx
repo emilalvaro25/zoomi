@@ -35,6 +35,7 @@ import MeetingGrid from './components/meeting-grid/MeetingGrid';
 import { translateText } from './lib/gemini';
 import { useLiveAPIContext } from './contexts/LiveAPIContext';
 import ShareLinkModal from './components/onboarding/ShareLinkModal';
+import { useAuth } from './lib/auth';
 
 const API_KEY = process.env.API_KEY as string;
 if (typeof API_KEY !== 'string') {
@@ -42,19 +43,23 @@ if (typeof API_KEY !== 'string') {
 }
 
 function AppContent() {
+  const { session, setSession } = useAuth();
   const {
     isFullScreen,
     setFullScreen,
     hasJoined,
+    setHasJoined,
     isParticipantListOpen,
     isShareModalOpen,
     setShareModalOpen,
+    setMeetingId,
   } = useUI();
   const {
     localParticipant,
     setParticipants,
     addOrUpdateParticipant,
     removeParticipant,
+    setLocalParticipantUid,
   } = useParticipantStore();
   const meetingId = useUI(state => state.meetingId);
 
@@ -64,6 +69,34 @@ function AppContent() {
   });
 
   const { client } = useLiveAPIContext();
+
+  // Handle auth state
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+    });
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'SIGNED_OUT') {
+        setHasJoined(false);
+        setMeetingId(null);
+        setParticipants([]);
+        setLocalParticipantUid(null);
+        window.history.pushState({}, '', window.location.pathname);
+      }
+      setSession(session);
+    });
+
+    return () => subscription.unsubscribe();
+  }, [
+    setSession,
+    setHasJoined,
+    setMeetingId,
+    setParticipants,
+    setLocalParticipantUid,
+  ]);
 
   // Handle fullscreen changes
   useEffect(() => {
@@ -265,18 +298,19 @@ function AppContent() {
   // Graceful disconnect
   useEffect(() => {
     const handleBeforeUnload = async () => {
-      if (localParticipant?.uid) {
+      if (localParticipant?.uid && meetingId) {
         await supabase
           .from('participants')
           .delete()
-          .eq('uid', localParticipant.uid);
+          .eq('uid', localParticipant.uid)
+          .eq('meeting_id', meetingId);
       }
     };
     window.addEventListener('beforeunload', handleBeforeUnload);
     return () => {
       window.removeEventListener('beforeunload', handleBeforeUnload);
     };
-  }, [localParticipant?.uid]);
+  }, [localParticipant?.uid, meetingId]);
 
   if (!hasJoined) {
     return <JoinScreen />;
