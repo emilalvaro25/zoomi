@@ -104,6 +104,18 @@ const JoinScreen: React.FC = () => {
         err.name === 'PermissionDeniedError'
       ) {
         setError('Camera and microphone permissions are required to join.');
+      } else if (
+        err.message &&
+        (err.message.includes(
+          "Could not find the 'is_screen_sharing' column",
+        ) ||
+          err.message.includes(
+            'column "is_screen_sharing" of relation "participants" does not exist',
+          ))
+      ) {
+        setError(
+          "Database schema is out of date. Please run the provided SQL setup script in your Supabase project's SQL Editor to update the 'participants' table.",
+        );
       } else {
         setError(err.message || 'An unexpected error occurred.');
       }
