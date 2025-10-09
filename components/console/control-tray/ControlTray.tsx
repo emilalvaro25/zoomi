@@ -23,7 +23,6 @@ import cn from 'classnames';
 import { memo, ReactNode, useEffect, useRef, useState } from 'react';
 import { AudioRecorder } from '../../../lib/audio-recorder';
 import {
-  useSettings,
   useLogStore,
   useUI,
   useCameraState,
@@ -185,33 +184,6 @@ function ControlTray({ children }: ControlTrayProps) {
     }
   };
 
-  const handleExportLogs = () => {
-    const { model } = useSettings.getState();
-    const { turns } = useLogStore.getState();
-
-    const logData = {
-      configuration: {
-        model,
-      },
-      conversation: turns.map(turn => ({
-        ...turn,
-        timestamp: turn.timestamp.toISOString(),
-      })),
-    };
-
-    const jsonString = JSON.stringify(logData, null, 2);
-    const blob = new Blob([jsonString], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-    a.href = url;
-    a.download = `live-api-logs-${timestamp}.json`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-  };
-
   const handleConnectToggle = () => {
     if (connected) {
       disconnect();
@@ -289,9 +261,9 @@ function ControlTray({ children }: ControlTrayProps) {
           <button
             className={cn('action-button')}
             onClick={() => setShareModalOpen(true)}
-            title="Share Invite"
+            title="Invite Participants"
           >
-            <span className="material-symbols-outlined filled">share</span>
+            <span className="material-symbols-outlined filled">person_add</span>
           </button>
         )}
         {isHost && remoteParticipantsExist && (
@@ -350,14 +322,6 @@ function ControlTray({ children }: ControlTrayProps) {
         </button>
         {isHost && (
           <>
-            <button
-              className={cn('action-button')}
-              onClick={handleExportLogs}
-              aria-label="Export Logs"
-              title="Export session logs"
-            >
-              <span className="icon">download</span>
-            </button>
             <button
               className={cn('action-button')}
               onClick={useLogStore.getState().clearTurns}

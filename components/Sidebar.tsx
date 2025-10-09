@@ -25,6 +25,7 @@ export default function Sidebar() {
   const [systemPrompt, setLocalSystemPrompt] = useState(savedSystemPrompt);
   const [isDirty, setIsDirty] = useState(false);
   const [showSaved, setShowSaved] = useState(false);
+  const [isLinkCopied, setIsLinkCopied] = useState(false);
 
   useEffect(() => {
     // When sidebar opens, reset local state to match global state
@@ -54,6 +55,14 @@ export default function Sidebar() {
     }
   };
 
+  const handleCopyLink = () => {
+    navigator.clipboard.writeText(window.location.href);
+    setIsLinkCopied(true);
+    setTimeout(() => {
+      setIsLinkCopied(false);
+    }, 2000);
+  };
+
   return (
     <>
       <aside className={c('sidebar', { open: isSidebarOpen })}>
@@ -64,6 +73,17 @@ export default function Sidebar() {
           </button>
         </div>
         <div className="sidebar-content">
+          <div className="sidebar-section">
+            <label>Meeting Link</label>
+            <div className="share-link-container">
+              <input type="text" readOnly value={window.location.href} />
+              <button onClick={handleCopyLink} title="Copy meeting link">
+                <span className="icon">
+                  {isLinkCopied ? 'check' : 'content_copy'}
+                </span>
+              </button>
+            </div>
+          </div>
           <div className="sidebar-section">
             <fieldset disabled={connected}>
               <label>

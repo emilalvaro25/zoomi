@@ -1364,3 +1364,35 @@ header h1 {
 .message-content.interim {
   opacity: 0.6;
 }
+.share-link-container {
+  display: flex;
+  gap: 8px;
+}
+
+.share-link-container input {
+  flex-grow: 1;
+  padding: 10px;
+  border-radius: 8px;
+  border: 1px solid var(--Neutral-30);
+  background-color: var(--Neutral-15);
+  color: var(--Neutral-60);
+  font-size: 14px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.share-link-container button {
+  padding: 0 12px;
+  border-radius: 8px;
+  background-color: var(--Neutral-20);
+  color: var(--Neutral-80);
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  flex-shrink: 0;
+  justify-content: center;
+}
+
+.share-link-container button:hover {
+  background-color: var(--Neutral-30);
+}
