@@ -10,7 +10,7 @@ import { useLiveAPIContext } from '@/contexts/LiveAPIContext';
 import React, { useEffect, useState } from 'react';
 
 export default function Sidebar() {
-  const { isSidebarOpen, toggleSidebar } = useUI();
+  const { isSidebarOpen, toggleSidebar, meetingId } = useUI();
   const {
     voice: savedVoice,
     systemPrompt: savedSystemPrompt,
@@ -27,6 +27,10 @@ export default function Sidebar() {
   const [showSaved, setShowSaved] = useState(false);
   const [isLinkCopied, setIsLinkCopied] = useState(false);
 
+  const meetingLink = meetingId
+    ? `${window.location.origin}/?meetingId=${meetingId}`
+    : window.location.origin;
+
   useEffect(() => {
     // When sidebar opens, reset local state to match global state
     if (isSidebarOpen) {
@@ -36,9 +40,7 @@ export default function Sidebar() {
   }, [isSidebarOpen, savedVoice, savedSystemPrompt]);
 
   useEffect(() => {
-    setIsDirty(
-      voice !== savedVoice || systemPrompt !== savedSystemPrompt,
-    );
+    setIsDirty(voice !== savedVoice || systemPrompt !== savedSystemPrompt);
   }, [voice, systemPrompt, savedVoice, savedSystemPrompt]);
 
   const handleSave = () => {
@@ -56,7 +58,7 @@ export default function Sidebar() {
   };
 
   const handleCopyLink = () => {
-    navigator.clipboard.writeText(window.location.href);
+    navigator.clipboard.writeText(meetingLink);
     setIsLinkCopied(true);
     setTimeout(() => {
       setIsLinkCopied(false);
@@ -76,7 +78,7 @@ export default function Sidebar() {
           <div className="sidebar-section">
             <label>Meeting Link</label>
             <div className="share-link-container">
-              <input type="text" readOnly value={window.location.href} />
+              <input type="text" readOnly value={meetingLink} />
               <button onClick={handleCopyLink} title="Copy meeting link">
                 <span className="icon">
                   {isLinkCopied ? 'check' : 'content_copy'}

@@ -83,10 +83,11 @@ const JoinScreen: React.FC = () => {
       setHasJoined(true);
 
       if (role === 'host') {
-        const url = new URL(window.location.origin);
-        url.searchParams.set('meetingId', currentMeetingId);
-        const newUrl = url.toString();
-        window.history.pushState({ path: newUrl }, '', newUrl);
+        // In sandboxed environments (like blob: URLs), pushState with an absolute URL
+        // fails. Using a relative URL that only contains the search parameters
+        // correctly updates the URL without causing a cross-origin error.
+        const newRelativeUrl = `?meetingId=${currentMeetingId}`;
+        window.history.pushState({ path: newRelativeUrl }, '', newRelativeUrl);
         setShareModalOpen(true);
       }
     } catch (err: any) {

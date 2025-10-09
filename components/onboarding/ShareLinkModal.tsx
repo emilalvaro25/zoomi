@@ -1,12 +1,16 @@
 import React from 'react';
 import Modal from '../Modal';
+import { useUI } from '@/lib/state';
 
 interface ShareLinkModalProps {
   onClose: () => void;
 }
 
 const ShareLinkModal: React.FC<ShareLinkModalProps> = ({ onClose }) => {
-  const meetingLink = window.location.href;
+  const { meetingId } = useUI();
+  const meetingLink = meetingId
+    ? `${window.location.origin}/?meetingId=${meetingId}`
+    : window.location.origin;
 
   const handleCopyLink = () => {
     navigator.clipboard.writeText(meetingLink);
