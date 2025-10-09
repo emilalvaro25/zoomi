@@ -215,3 +215,98 @@
 .schedule-meeting-modal .download-button {
   width: 100%;
 }
+
+/* Waiting Room Styles */
+.waiting-room-container .spinner {
+  border: 4px solid var(--Neutral-30);
+  border-top: 4px solid var(--Blue-500);
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  animation: spin 1s linear infinite;
+  margin: 0 auto 20px;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Denied Screen Styles */
+.denied-screen-container h2 {
+    color: var(--Red-400);
+}
+
+/* Waiting Room Notification Styles */
+.waiting-room-notification {
+  position: absolute;
+  top: 90px;
+  right: 20px;
+  background-color: var(--Neutral-15);
+  border-radius: 12px;
+  border: 1px solid var(--border-stroke);
+  padding: 16px;
+  width: 300px;
+  z-index: 1005;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.notification-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border-bottom: 1px solid var(--Neutral-30);
+  padding-bottom: 12px;
+  margin-bottom: 12px;
+}
+
+.notification-header h4 {
+  font-size: 16px;
+  color: var(--Neutral-90);
+}
+
+.waiting-list {
+  list-style: none;
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.waiting-participant {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 0;
+}
+
+.waiting-participant .participant-name {
+  color: var(--Neutral-80);
+}
+
+.participant-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.participant-actions button {
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: bold;
+}
+
+.admit-btn {
+  background-color: var(--Blue-500);
+  color: var(--Neutral-5);
+}
+.admit-btn:hover {
+  background-color: var(--Blue-400);
+}
+
+.deny-btn {
+  background-color: var(--Neutral-30);
+  color: var(--Neutral-80);
+}
+.deny-btn:hover {
+  background-color: var(--Red-600);
+  color: var(--text);
+}

@@ -40,6 +40,9 @@ import { useAuth } from './lib/auth';
 import StreamingConsole from './components/demo/streaming-console/StreamingConsole';
 import { cancel as cancelTTS, speak as speakWithTTS } from './lib/tts';
 import SyncIndicator from './components/sync-indicator/SyncIndicator';
+import WaitingRoom from './components/onboarding/WaitingRoom';
+import DeniedScreen from './components/onboarding/DeniedScreen';
+import WaitingRoomNotification from './components/onboarding/WaitingRoomNotification';
 
 const API_KEY = process.env.API_KEY as string;
 if (typeof API_KEY !== 'string') {
@@ -150,6 +153,7 @@ function AppContent() {
           isLocal: p.uid === localParticipant.uid,
           role: p.role,
           language: p.language,
+          status: p.status,
         }));
         setParticipants(mappedParticipants);
       }
@@ -185,6 +189,7 @@ function AppContent() {
               isHandRaised: p.is_hand_raised,
               role: p.role,
               language: p.language,
+              status: p.status,
             });
           } else if (payload.eventType === 'DELETE') {
             removeParticipant(payload.old.uid);
@@ -418,7 +423,7 @@ function AppContent() {
     };
   }, [localParticipant?.uid, meetingId]);
 
-  if (!hasJoined) {
+  if (!hasJoined || !localParticipant) {
     return (
       <>
         <JoinScreen />
@@ -429,11 +434,20 @@ function AppContent() {
     );
   }
 
+  if (localParticipant.status === 'waiting') {
+    return <WaitingRoom />;
+  }
+
+  if (localParticipant.status === 'denied') {
+    return <DeniedScreen />;
+  }
+
   return (
     <div className={cn('App', { 'full-screen': isFullScreen })}>
       {isShareModalOpen && (
         <ShareLinkModal onClose={() => setShareModalOpen(false)} />
       )}
+      {localParticipant.role === 'host' && <WaitingRoomNotification />}
       <Header />
       <Sidebar />
       <ErrorScreen />

@@ -255,6 +255,7 @@ export interface Participant {
   role: 'host' | 'student';
   language?: string;
   isLocal?: boolean;
+  status: 'waiting' | 'in_meeting' | 'denied';
 }
 
 export const useParticipantStore = create<{
@@ -272,6 +273,7 @@ export const useParticipantStore = create<{
     role: 'host' | 'student',
     uid: string,
     language?: string,
+    status?: 'waiting' | 'in_meeting' | 'denied',
   ) => void;
   setParticipants: (participants: Participant[]) => void;
   addOrUpdateParticipant: (participant: Omit<Participant, 'isLocal'>) => void;
@@ -283,6 +285,8 @@ export const useParticipantStore = create<{
   setAllMuted: (isMuted: boolean) => Promise<void>;
   setRemoteVideoFrame: (uid: string, frame: string) => void;
   clearRemoteVideoFrame: (uid: string) => void;
+  admitParticipant: (uid: string) => Promise<void>;
+  denyParticipant: (uid: string) => Promise<void>;
 }>((set, get) => ({
   participants: [],
   localParticipant: null,
@@ -309,6 +313,7 @@ export const useParticipantStore = create<{
     role: 'host' | 'student',
     uid: string,
     language?: string,
+    status: 'waiting' | 'in_meeting' | 'denied' = 'waiting',
   ) => {
     if (!uid) {
       console.error('Cannot add local participant without a uid.');
@@ -323,6 +328,7 @@ export const useParticipantStore = create<{
       isLocal: true,
       role,
       language,
+      status,
     };
     set(state => {
       // Avoid duplicates on re-join
@@ -355,6 +361,15 @@ export const useParticipantStore = create<{
       const newLocalParticipant = isForLocalUser
         ? finalParticipant
         : state.localParticipant;
+      
+      // If a participant is denied, remove them from the host's list after a short delay
+      if (participant.status === 'denied') {
+        setTimeout(() => {
+          set(s => ({
+            participants: s.participants.filter(p => p.uid !== participant.uid)
+          }));
+        }, 500);
+      }
 
       return {
         participants: newParticipants,
@@ -463,5 +478,28 @@ export const useParticipantStore = create<{
       delete newFrames[uid];
       return { remoteVideoFrames: newFrames };
     });
+  },
+  admitParticipant: async (uid: string) => {
+    const meetingId = useUI.getState().meetingId;
+    if (!meetingId) return;
+    await supabase
+      .from('participants')
+      .update({ status: 'in_meeting' })
+      .eq('uid', uid)
+      .eq('meeting_id', meetingId);
+  },
+  denyParticipant: async (uid: string) => {
+    const meetingId = useUI.getState().meetingId;
+    if (!meetingId) return;
+    await supabase
+      .from('participants')
+      .update({ status: 'denied' })
+      .eq('uid', uid)
+      .eq('meeting_id', meetingId);
+    // Realtime will show 'denied' message on user's client.
+    // Clean up the user from the DB after a delay.
+    setTimeout(async () => {
+      await supabase.from('participants').delete().eq('uid', uid);
+    }, 5000); // 5s delay
   },
 }));

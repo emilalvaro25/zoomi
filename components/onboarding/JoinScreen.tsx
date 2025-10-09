@@ -59,22 +59,18 @@ const JoinScreen: React.FC = () => {
         setMeetingId(currentMeetingId);
       }
 
-      let role: 'host' | 'student' = 'student';
-      if (isHost) {
-        role = 'host';
-      } else {
-        // Determine role: first person in is host if not explicitly joining
-        const { data: existingParticipants, error: fetchError } =
-          await supabase
-            .from('participants')
-            .select('uid')
-            .eq('meeting_id', currentMeetingId)
-            .limit(1);
+      // Determine role: first person in is host if not explicitly joining
+      const { data: existingParticipants, error: fetchError } = await supabase
+        .from('participants')
+        .select('uid')
+        .eq('meeting_id', currentMeetingId)
+        .limit(1);
 
-        if (fetchError) throw fetchError;
-        role = existingParticipants.length > 0 ? 'student' : 'host';
-      }
+      if (fetchError) throw fetchError;
 
+      const role =
+        isHost || existingParticipants.length === 0 ? 'host' : 'student';
+      const status = role === 'host' ? 'in_meeting' : 'waiting';
       const language = role === 'host' ? 'English' : 'Spanish'; // Default student language
 
       const { error: insertError } = await supabase
@@ -88,12 +84,13 @@ const JoinScreen: React.FC = () => {
           meeting_id: currentMeetingId,
           role: role,
           language: language,
+          status: status,
         });
 
       if (insertError) throw new Error(insertError.message);
 
       setLocalParticipantUid(uid);
-      addLocalParticipant(name, role, uid, language);
+      addLocalParticipant(name, role, uid, language, status);
       setHasJoined(true);
 
       if (role === 'host') {
