@@ -12,7 +12,7 @@
   border: 1px solid var(--border-stroke);
   display: flex;
   justify-content: center;
-  align-items: center;
+  align: items;
   color: var(--Neutral-80);
   transition: border 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
 }
@@ -20,6 +20,11 @@
 .participant-tile.is-speaking {
   border: 2px solid var(--accent-green);
   box-shadow: 0 0 12px 2px var(--accent-green);
+}
+
+.participant-tile.is-speaking-ending-turn {
+  border: 2px solid var(--Red-500);
+  box-shadow: 0 0 12px 2px var(--Red-500);
 }
 
 .participant-tile .webcam-view {

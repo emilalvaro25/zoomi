@@ -21,7 +21,6 @@ import {
   fetchCartesiaVoices,
   fetchHuggingfaceVoices,
   fetchOpenAIVoices,
-  getInitialVoices,
   GEMINI_VOICES,
   CARTESIA_VOICES,
   HUGGINGFACE_VOICES,
@@ -98,7 +97,8 @@ export default function Sidebar() {
       const results = await Promise.all(allPromises);
       const fetchedVoices = results.flat();
 
-      const newVoiceList = [...getInitialVoices(), ...fetchedVoices];
+      // The base voices are always Gemini's
+      const newVoiceList = [...GEMINI_VOICES, ...fetchedVoices];
 
       setAvailableVoices(newVoiceList);
     };

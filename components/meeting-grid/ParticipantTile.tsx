@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
 */
 import React from 'react';
-import { Participant, useParticipantStore } from '@/lib/state';
+import { Participant, useParticipantStore, useUI } from '@/lib/state';
 import WebcamView from '../demo/webcam-view/WebcamView';
 import './ParticipantTile.css';
 import cn from 'classnames';
@@ -19,10 +19,14 @@ const ParticipantTile: React.FC<ParticipantTileProps> = ({ participant }) => {
     setPinnedParticipant,
     remoteVideoFrames,
   } = useParticipantStore();
+  const { countdown } = useUI();
 
   const isVideoOn = !participant.isCameraOff;
   const isSpeaking = participant.uid === speakingParticipantUid;
   const isPinned = participant.uid === pinnedParticipantUid;
+
+  const isAboutToEndTurn =
+    isSpeaking && participant.isLocal && countdown !== null;
 
   const handlePinClick = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -71,7 +75,8 @@ const ParticipantTile: React.FC<ParticipantTileProps> = ({ participant }) => {
   return (
     <div
       className={cn('participant-tile', {
-        'is-speaking': isSpeaking,
+        'is-speaking': isSpeaking && !isAboutToEndTurn,
+        'is-speaking-ending-turn': isAboutToEndTurn,
         'is-pinned': isPinned,
       })}
     >
