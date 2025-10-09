@@ -74,6 +74,8 @@ function ControlTray({ children }: ControlTrayProps) {
     disconnect,
     toggleVideo,
     videoEnabled,
+    toggleScreenShare,
+    isScreenSharing,
   } = useLiveAPIContext();
 
   const speechTimerRef = useRef<number | null>(null);
@@ -283,6 +285,9 @@ function ControlTray({ children }: ControlTrayProps) {
 
   const connectButtonTitle = connected ? 'Stop streaming' : 'Start streaming';
   const videoButtonTitle = videoEnabled ? 'Turn off camera' : 'Turn on camera';
+  const screenShareButtonTitle = isScreenSharing
+    ? 'Stop sharing screen'
+    : 'Share screen';
   const fullScreenButtonTitle = isFullScreen
     ? 'Exit full screen'
     : 'Enter full screen';
@@ -321,9 +326,19 @@ function ControlTray({ children }: ControlTrayProps) {
           className={cn('action-button', { 'video-enabled': videoEnabled })}
           onClick={toggleVideo}
           title={videoButtonTitle}
+          disabled={isScreenSharing}
         >
           <span className="material-symbols-outlined filled">
             {videoEnabled ? 'videocam' : 'videocam_off'}
+          </span>
+        </button>
+        <button
+          className={cn('action-button', { 'video-enabled': isScreenSharing })}
+          onClick={toggleScreenShare}
+          title={screenShareButtonTitle}
+        >
+          <span className="material-symbols-outlined filled">
+            {isScreenSharing ? 'stop_screen_share' : 'screen_share'}
           </span>
         </button>
         <button

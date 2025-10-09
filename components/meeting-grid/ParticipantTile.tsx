@@ -21,7 +21,7 @@ const ParticipantTile: React.FC<ParticipantTileProps> = ({ participant }) => {
   } = useParticipantStore();
   const { countdown } = useUI();
 
-  const isVideoOn = !participant.isCameraOff;
+  const isVideoOn = !participant.isCameraOff || participant.isScreenSharing;
   const isSpeaking = participant.uid === speakingParticipantUid;
   const isPinned = participant.uid === pinnedParticipantUid;
 
@@ -42,7 +42,7 @@ const ParticipantTile: React.FC<ParticipantTileProps> = ({ participant }) => {
     // Remote participants use <img> for received frames
     const frameData = remoteVideoFrames[participant.uid];
 
-    if (isVideoOn && frameData) {
+    if ((isVideoOn || participant.isScreenSharing) && frameData) {
       return (
         <img
           src={`data:image/jpeg;base64,${frameData}`}
@@ -56,9 +56,13 @@ const ParticipantTile: React.FC<ParticipantTileProps> = ({ participant }) => {
     return (
       <div className="participant-placeholder">
         <span className="avatar-icon icon">
-          {isVideoOn ? 'videocam' : 'videocam_off'}
+          {participant.isScreenSharing
+            ? 'screen_share'
+            : isVideoOn
+            ? 'videocam'
+            : 'videocam_off'}
         </span>
-        {isVideoOn && (
+        {!participant.isCameraOff && !participant.isScreenSharing && (
           <p className="placeholder-text">Waiting for video...</p>
         )}
       </div>
@@ -71,6 +75,7 @@ const ParticipantTile: React.FC<ParticipantTileProps> = ({ participant }) => {
         'is-speaking': isSpeaking && !isAboutToEndTurn,
         'is-speaking-ending-turn': isAboutToEndTurn,
         'is-pinned': isPinned,
+        'is-screen-sharing': participant.isScreenSharing,
       })}
     >
       {participant.isHandRaised && (
@@ -90,12 +95,18 @@ const ParticipantTile: React.FC<ParticipantTileProps> = ({ participant }) => {
       {renderContent()}
 
       <div className="participant-name-overlay">
-        <span
-          className={cn('icon', { muted: participant.isMuted })}
-          title={participant.isMuted ? 'Muted' : 'Unmuted'}
-        >
-          {participant.isMuted ? 'mic_off' : 'mic'}
-        </span>
+        {participant.isScreenSharing ? (
+          <span className="icon" title="Screen sharing">
+            screen_share
+          </span>
+        ) : (
+          <span
+            className={cn('icon', { muted: participant.isMuted })}
+            title={participant.isMuted ? 'Muted' : 'Unmuted'}
+          >
+            {participant.isMuted ? 'mic_off' : 'mic'}
+          </span>
+        )}
         <span title={participant.name}>{participant.name}</span>
         {participant.role === 'host' && (
           <span className="host-badge">Host</span>

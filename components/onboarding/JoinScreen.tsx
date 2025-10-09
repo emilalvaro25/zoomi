@@ -73,6 +73,7 @@ const JoinScreen: React.FC = () => {
           is_muted: role === 'student',
           is_camera_off: true,
           is_hand_raised: false,
+          is_screen_sharing: false,
           meeting_id: currentMeetingId,
           role: role,
           language: language,

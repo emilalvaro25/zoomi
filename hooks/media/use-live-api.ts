@@ -55,6 +55,9 @@ export type UseLiveApiResults = {
 
   videoEnabled: boolean;
   toggleVideo: () => void;
+  isScreenSharing: boolean;
+  toggleScreenShare: () => void;
+  isLocalVideoActive: boolean;
   videoRef: React.RefObject<HTMLVideoElement>;
 };
 
@@ -107,7 +110,7 @@ export function useLiveApi({
   );
 
   const audioStreamerRef = useRef<AudioStreamer | null>(null);
-  const { localParticipantUid, setCameraOff } = useParticipantStore();
+  const { localParticipantUid, setCameraOff, setScreenSharing } = useParticipantStore();
   const meetingId = useUI(state => state.meetingId);
 
   const [volume, setVolume] = useState(0);
@@ -115,10 +118,15 @@ export function useLiveApi({
   const [config, setConfig] = useState<LiveConnectConfig>({});
 
   const [videoEnabled, setVideoEnabled] = useState(false);
+  const [isScreenSharing, setIsScreenSharing] = useState(false);
+  const cameraWasOnBeforeScreenShare = useRef(false);
+
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const frameIntervalRef = useRef<number | null>(null);
   const videoChannelRef = useRef<RealtimeChannel | null>(null);
+
+  const isLocalVideoActive = videoEnabled || isScreenSharing;
 
   // register audio for streaming server -> speakers
   useEffect(() => {
@@ -346,7 +354,7 @@ export function useLiveApi({
       }
     };
 
-    if (videoEnabled) {
+    if (isLocalVideoActive) {
       startVideoStreaming();
     } else {
       stopVideoStreaming();
@@ -355,11 +363,72 @@ export function useLiveApi({
     return () => {
       stopVideoStreaming();
     };
-  }, [connected, videoEnabled, client, localParticipantUid]);
+  }, [connected, isLocalVideoActive, client, localParticipantUid]);
 
   const toggleVideo = useCallback(() => {
     setVideoEnabled(v => !v);
   }, []);
+
+  const toggleScreenShare = useCallback(async () => {
+    if (isScreenSharing) {
+      // Stop screen sharing
+      if (videoRef.current && videoRef.current.srcObject) {
+        (videoRef.current.srcObject as MediaStream)
+          .getTracks()
+          .forEach(track => track.stop());
+        videoRef.current.srcObject = null;
+      }
+      setIsScreenSharing(false);
+      if (localParticipantUid) {
+        setScreenSharing(localParticipantUid, false);
+      }
+      // Restore camera if it was on before
+      if (cameraWasOnBeforeScreenShare.current) {
+        setVideoEnabled(true);
+      }
+    } else {
+      // Start screen sharing
+      cameraWasOnBeforeScreenShare.current = videoEnabled;
+      if (videoEnabled) {
+        setVideoEnabled(false); // Turn off camera before starting share
+      }
+      try {
+        const stream = await navigator.mediaDevices.getDisplayMedia({
+          video: true,
+          audio: false, // For simplicity, only sharing video
+        });
+        if (videoRef.current) {
+          videoRef.current.srcObject = stream;
+        }
+        setIsScreenSharing(true);
+        if (localParticipantUid) {
+          setScreenSharing(localParticipantUid, true);
+        }
+        // Add listener to stop sharing when browser UI is used
+        stream.getVideoTracks()[0].onended = () => {
+          if (videoRef.current && videoRef.current.srcObject) {
+             (videoRef.current.srcObject as MediaStream)
+              .getTracks()
+              .forEach(track => track.stop());
+            videoRef.current.srcObject = null;
+          }
+          setIsScreenSharing(false);
+          if (localParticipantUid) {
+            setScreenSharing(localParticipantUid, false);
+          }
+          if (cameraWasOnBeforeScreenShare.current) {
+            setVideoEnabled(true);
+          }
+        };
+      } catch (err) {
+        console.error('Error starting screen share:', err);
+        // Restore camera if user cancelled or there was an error
+        if (cameraWasOnBeforeScreenShare.current) {
+          setVideoEnabled(true);
+        }
+      }
+    }
+  }, [isScreenSharing, videoEnabled, localParticipantUid, setScreenSharing]);
 
   useEffect(() => {
     if (videoEnabled) {
@@ -392,8 +461,8 @@ export function useLiveApi({
         isCancelled = true;
       };
     } else {
-      // Turn off video
-      if (videoRef.current && videoRef.current.srcObject) {
+      // Turn off video (only if not screen sharing)
+      if (!isScreenSharing && videoRef.current && videoRef.current.srcObject) {
         (videoRef.current.srcObject as MediaStream)
           .getTracks()
           .forEach(track => track.stop());
@@ -403,7 +472,7 @@ export function useLiveApi({
         setCameraOff(localParticipantUid, true);
       }
     }
-  }, [videoEnabled, videoQuality, localParticipantUid, setCameraOff]);
+  }, [videoEnabled, videoQuality, localParticipantUid, setCameraOff, isScreenSharing]);
 
   // Cleanup on unmount
   useEffect(() => {
@@ -426,6 +495,9 @@ export function useLiveApi({
     volume,
     videoEnabled,
     toggleVideo,
+    isScreenSharing,
+    toggleScreenShare,
+    isLocalVideoActive,
     videoRef,
   };
 }

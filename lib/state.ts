@@ -257,6 +257,7 @@ export interface Participant {
   isMuted: boolean;
   isCameraOff: boolean;
   isHandRaised: boolean;
+  isScreenSharing: boolean;
   role: 'host' | 'student';
   language?: string;
   isLocal?: boolean;
@@ -286,6 +287,7 @@ export const useParticipantStore = create<{
   setMuted: (uid: string, isMuted: boolean) => Promise<void>;
   setCameraOff: (uid: string, isCameraOff: boolean) => Promise<void>;
   setHandRaised: (uid: string, isHandRaised: boolean) => Promise<void>;
+  setScreenSharing: (uid: string, isScreenSharing: boolean) => Promise<void>;
   setLanguage: (uid: string, language: string) => Promise<void>;
   setAllMuted: (isMuted: boolean) => Promise<void>;
   setRemoteVideoFrame: (uid: string, frame: string) => void;
@@ -330,6 +332,7 @@ export const useParticipantStore = create<{
       isMuted: role === 'student', // Students are muted by default
       isCameraOff: true,
       isHandRaised: false,
+      isScreenSharing: false,
       isLocal: true,
       role,
       language,
@@ -425,6 +428,19 @@ export const useParticipantStore = create<{
       await supabase
         .from('participants')
         .update({ is_hand_raised: isHandRaised })
+        .eq('uid', uid);
+    }
+  },
+  setScreenSharing: async (uid, isScreenSharing) => {
+    set(state => ({
+      participants: state.participants.map(p =>
+        p.uid === uid ? { ...p, isScreenSharing } : p,
+      ),
+    }));
+    if (uid === get().localParticipant?.uid) {
+      await supabase
+        .from('participants')
+        .update({ is_screen_sharing: isScreenSharing })
         .eq('uid', uid);
     }
   },

@@ -22,6 +22,7 @@ export interface Database {
           is_camera_off: boolean;
           is_hand_raised: boolean;
           is_muted: boolean;
+          is_screen_sharing: boolean;
           language: string | null;
           meeting_id: string;
           name: string;
@@ -35,6 +36,7 @@ export interface Database {
           is_camera_off: boolean;
           is_hand_raised: boolean;
           is_muted: boolean;
+          is_screen_sharing?: boolean;
           language?: string | null;
           meeting_id: string;
           name: string;
@@ -48,6 +50,7 @@ export interface Database {
           is_camera_off?: boolean;
           is_hand_raised?: boolean;
           is_muted?: boolean;
+          is_screen_sharing?: boolean;
           language?: string | null;
           meeting_id?: string;
           name?: string;
