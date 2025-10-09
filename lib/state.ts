@@ -9,7 +9,6 @@ import {
   DEFAULT_LIVE_API_MODEL,
   DEFAULT_VOICE,
   AVAILABLE_LANGUAGES,
-  INITIAL_AVAILABLE_VOICES,
   TTS_PROVIDERS,
 } from './constants';
 import {
@@ -18,10 +17,14 @@ import {
   LiveServerToolCall,
 } from '@google/genai';
 import { supabase } from './supabase';
+import { getInitialVoices } from './voices';
+
+export type TranslationMode = 'off' | 'incoming' | 'outgoing' | 'bidirectional';
 
 /**
  * Settings
  */
+// FIX: Changed create() syntax to fix Zustand persist middleware type error.
 export const useSettings = create<{
   model: string;
   voice: string;
@@ -32,16 +35,23 @@ export const useSettings = create<{
   huggingfaceApiKey: string;
   openaiApiKey: string;
   activeTtsProvider: string;
+  isTranslationEnabled: boolean;
+  translationVolume: number;
+  translationMode: TranslationMode;
   setModel: (model: string) => void;
   setVoice: (voice: string) => void;
   setLanguage: (language: string) => void;
   setSystemPrompt: (prompt: string) => void;
   addVoice: (voice: string) => void;
+  setAvailableVoices: (voices: string[]) => void;
   setCartesiaApiKey: (key: string) => void;
   setHuggingfaceApiKey: (key: string) => void;
   setOpenaiApiKey: (key: string) => void;
   setActiveTtsProvider: (provider: string) => void;
-}>(
+  toggleTranslation: () => void;
+  setTranslationVolume: (volume: number) => void;
+  setTranslationMode: (mode: TranslationMode) => void;
+}>()(
   persist(
     (set, get) => ({
       model: DEFAULT_LIVE_API_MODEL,
@@ -49,11 +59,14 @@ export const useSettings = create<{
       language: AVAILABLE_LANGUAGES[0],
       systemPrompt:
         "Your sole task is to translate the user's speech into {language}. Do not add any extra commentary, greetings, or explanations. Provide only the direct translation.",
-      availableVoices: INITIAL_AVAILABLE_VOICES,
+      availableVoices: getInitialVoices(),
       cartesiaApiKey: '',
       huggingfaceApiKey: '',
       openaiApiKey: '',
       activeTtsProvider: TTS_PROVIDERS[0],
+      isTranslationEnabled: true,
+      translationVolume: 1.0,
+      translationMode: 'bidirectional',
       setModel: model => set({ model }),
       setVoice: voice => set({ voice }),
       setLanguage: language => set({ language }),
@@ -65,10 +78,23 @@ export const useSettings = create<{
           }));
         }
       },
+      setAvailableVoices: (voices: string[]) => {
+        const uniqueSortedVoices = [...new Set(voices)].sort();
+        const currentVoice = get().voice;
+        // If the currently selected voice is no longer available, reset to default
+        if (!uniqueSortedVoices.includes(currentVoice)) {
+          set({ voice: DEFAULT_VOICE });
+        }
+        set({ availableVoices: uniqueSortedVoices });
+      },
       setCartesiaApiKey: key => set({ cartesiaApiKey: key }),
       setHuggingfaceApiKey: key => set({ huggingfaceApiKey: key }),
       setOpenaiApiKey: key => set({ openaiApiKey: key }),
       setActiveTtsProvider: provider => set({ activeTtsProvider: provider }),
+      toggleTranslation: () =>
+        set(state => ({ isTranslationEnabled: !state.isTranslationEnabled })),
+      setTranslationVolume: volume => set({ translationVolume: volume }),
+      setTranslationMode: mode => set({ translationMode: mode }),
     }),
     {
       name: 'zoom-settings-storage',
@@ -158,10 +184,11 @@ export type Template =
 export interface LiveClientToolResponse {
   functionResponses?: FunctionResponse[];
 }
+// FIX: Updated GroundingChunk type to align with @google/genai, making uri and title optional.
 export interface GroundingChunk {
   web?: {
-    uri: string;
-    title: string;
+    uri?: string;
+    title?: string;
   };
 }
 

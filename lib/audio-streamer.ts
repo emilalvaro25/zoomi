@@ -250,7 +250,20 @@ export class AudioStreamer {
 
   complete() {
     this.isStreamComplete = true;
-    this.onComplete();
+    // Call onComplete only if the queue is empty.
+    // If not, onended handler of the last buffer will call it.
+    if (this.audioQueue.length === 0) {
+      this.onComplete();
+    }
+  }
+
+  setVolume(volume: number) {
+    if (this.gainNode) {
+      this.gainNode.gain.linearRampToValueAtTime(
+        volume,
+        this.context.currentTime + 0.1,
+      );
+    }
   }
 }
 

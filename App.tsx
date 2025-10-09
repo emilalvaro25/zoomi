@@ -23,7 +23,7 @@ import ControlTray from './components/console/control-tray/ControlTray';
 import ErrorScreen from './components/demo/ErrorScreen';
 
 import { LiveAPIProvider } from './contexts/LiveAPIContext';
-import { useUI, useParticipantStore } from './lib/state';
+import { useUI, useParticipantStore, useSettings } from './lib/state';
 import { useEffect, useState } from 'react';
 import ParticipantList from './components/participant-list/ParticipantList';
 import JoinScreen from './components/onboarding/JoinScreen';
@@ -37,6 +37,7 @@ import { useLiveAPIContext } from './contexts/LiveAPIContext';
 import ShareLinkModal from './components/onboarding/ShareLinkModal';
 import { useAuth } from './lib/auth';
 import StreamingConsole from './components/demo/streaming-console/StreamingConsole';
+import { cancel as cancelTTS, speak as speakWithTTS } from './lib/tts';
 
 const API_KEY = process.env.API_KEY as string;
 if (typeof API_KEY !== 'string') {
@@ -65,6 +66,7 @@ function AppContent() {
     clearRemoteVideoFrame,
   } = useParticipantStore();
   const meetingId = useUI(state => state.meetingId);
+  const { isTranslationEnabled, translationMode } = useSettings();
 
   const [activeSubtitle, setActiveSubtitle] = useState({
     text: '',
@@ -214,7 +216,13 @@ function AppContent() {
 
   // Handle sending own transcription to DB for all participants
   useEffect(() => {
-    if (!hasJoined || !localParticipant?.uid) return;
+    if (
+      !hasJoined ||
+      !localParticipant?.uid ||
+      (translationMode !== 'outgoing' && translationMode !== 'bidirectional')
+    ) {
+      return;
+    }
 
     let lastMessageId: string | null = null;
     const handleInputTranscription = async (text: string, isFinal: boolean) => {
@@ -254,37 +262,25 @@ function AppContent() {
     return () => {
       client.off('inputTranscription', handleInputTranscription);
     };
-  }, [client, hasJoined, localParticipant, meetingId]);
+  }, [client, hasJoined, localParticipant, meetingId, translationMode]);
 
   // Handle receiving remote transcriptions for translation
   useEffect(() => {
-    if (!hasJoined || !localParticipant?.language) {
+    if (
+      !hasJoined ||
+      !localParticipant?.language ||
+      (translationMode !== 'incoming' && translationMode !== 'bidirectional')
+    ) {
       return;
     }
-
-    const speak = (text: string) => {
-      // Cancel any previous speech
-      window.speechSynthesis.cancel();
-      const utterance = new SpeechSynthesisUtterance(text);
-      // Find a voice that matches the user's language if possible
-      const voices = window.speechSynthesis.getVoices();
-      const studentLang = localParticipant.language?.split(' ')[0].toLowerCase();
-      const voice = voices.find(v =>
-        v.lang.toLowerCase().startsWith(studentLang),
-      );
-      if (voice) {
-        utterance.voice = voice;
-      }
-      window.speechSynthesis.speak(utterance);
-    };
 
     const handleRemoteMessage = async (text: string, isFinal: boolean) => {
       if (!localParticipant.language || !text.trim()) return;
       try {
         const translated = await translateText(text, localParticipant.language);
         setActiveSubtitle({ text: translated, isFinal });
-        if (isFinal) {
-          speak(translated);
+        if (isFinal && isTranslationEnabled) {
+          speakWithTTS(translated);
         }
       } catch (error) {
         console.error('Translation error:', error);
@@ -317,8 +313,15 @@ function AppContent() {
 
     return () => {
       supabase.removeChannel(channel);
+      cancelTTS();
     };
-  }, [hasJoined, localParticipant, meetingId]);
+  }, [
+    hasJoined,
+    localParticipant,
+    meetingId,
+    isTranslationEnabled,
+    translationMode,
+  ]);
 
   // Graceful disconnect
   useEffect(() => {

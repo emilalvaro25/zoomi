@@ -27,6 +27,7 @@ import {
   useUI,
   useCameraState,
   useParticipantStore,
+  useSettings,
 } from '@/lib/state';
 
 import { useLiveAPIContext } from '../../../contexts/LiveAPIContext';
@@ -50,6 +51,7 @@ function ControlTray({ children }: ControlTrayProps) {
     setHasJoined,
   } = useUI();
   const { effect, setEffect } = useCameraState();
+  const { isTranslationEnabled, toggleTranslation } = useSettings();
   const {
     setMuted: setParticipantMuted,
     participants,
@@ -217,6 +219,9 @@ function ControlTray({ children }: ControlTrayProps) {
   const raiseHandButtonTitle = localParticipant?.isHandRaised
     ? 'Lower hand'
     : 'Raise hand';
+  const translationButtonTitle = isTranslationEnabled
+    ? 'Disable translation audio'
+    : 'Enable translation audio';
 
   const remoteParticipantsExist = participants.some(
     p => p.uid !== localParticipant?.uid,
@@ -256,6 +261,13 @@ function ControlTray({ children }: ControlTrayProps) {
           title={raiseHandButtonTitle}
         >
           <span className="material-symbols-outlined filled">front_hand</span>
+        </button>
+        <button
+          className={cn('action-button', { active: isTranslationEnabled })}
+          onClick={toggleTranslation}
+          title={translationButtonTitle}
+        >
+          <span className="material-symbols-outlined filled">translate</span>
         </button>
         {isHost && (
           <button

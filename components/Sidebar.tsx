@@ -2,12 +2,31 @@
  * @license
  * SPDX-License-Identifier: Apache-2.0
 */
-import { useParticipantStore, useSettings, useUI } from '@/lib/state';
+import {
+  useParticipantStore,
+  useSettings,
+  useUI,
+  TranslationMode,
+} from '@/lib/state';
 import c from 'classnames';
-import { AVAILABLE_LANGUAGES, TTS_PROVIDERS } from '@/lib/constants';
+import {
+  AVAILABLE_LANGUAGES,
+  TTS_PROVIDERS,
+  DEFAULT_VOICE,
+} from '@/lib/constants';
 import { useLiveAPIContext } from '@/contexts/LiveAPIContext';
 // FIX: Import React to resolve namespace issue for React.ChangeEvent.
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
+import {
+  fetchCartesiaVoices,
+  fetchHuggingfaceVoices,
+  fetchOpenAIVoices,
+  getInitialVoices,
+  GEMINI_VOICES,
+  CARTESIA_VOICES,
+  HUGGINGFACE_VOICES,
+  OPENAI_VOICES,
+} from '@/lib/voices';
 
 export default function Sidebar() {
   const {
@@ -25,13 +44,17 @@ export default function Sidebar() {
     huggingfaceApiKey: savedHuggingfaceKey,
     openaiApiKey: savedOpenAIKey,
     activeTtsProvider: savedTtsProvider,
+    translationVolume: savedTranslationVolume,
+    translationMode: savedTranslationMode,
     setVoice,
     setSystemPrompt,
-    addVoice,
+    setAvailableVoices,
     setCartesiaApiKey,
     setHuggingfaceApiKey,
     setOpenaiApiKey,
     setActiveTtsProvider,
+    setTranslationVolume,
+    setTranslationMode,
   } = useSettings();
 
   const { localParticipant, setLanguage } = useParticipantStore();
@@ -45,15 +68,69 @@ export default function Sidebar() {
   const [openaiApiKey, setLocalOpenAIKey] = useState(savedOpenAIKey);
   const [activeTtsProvider, setLocalActiveTtsProvider] =
     useState(savedTtsProvider);
+  const [translationVolume, setLocalTranslationVolume] =
+    useState(savedTranslationVolume);
+  const [translationMode, setLocalTranslationMode] =
+    useState(savedTranslationMode);
 
   const [isDirty, setIsDirty] = useState(false);
   const [showSaved, setShowSaved] = useState(false);
   const [isLinkCopied, setIsLinkCopied] = useState(false);
-  const [newVoiceName, setNewVoiceName] = useState('');
 
   const meetingLink = meetingId
     ? `${window.location.origin}/?meetingId=${meetingId}`
     : window.location.origin;
+
+  // Effect to fetch and update voices when API keys change
+  useEffect(() => {
+    const updateVoices = async () => {
+      const allPromises = [
+        fetchCartesiaVoices(savedCartesiaKey),
+        fetchHuggingfaceVoices(savedHuggingfaceKey),
+        fetchOpenAIVoices(savedOpenAIKey),
+      ];
+
+      const results = await Promise.all(allPromises);
+      const fetchedVoices = results.flat();
+
+      const newVoiceList = [...getInitialVoices(), ...fetchedVoices];
+
+      setAvailableVoices(newVoiceList);
+    };
+
+    updateVoices();
+  }, [
+    savedCartesiaKey,
+    savedHuggingfaceKey,
+    savedOpenAIKey,
+    setAvailableVoices,
+  ]);
+
+  const displayedVoices = useMemo(() => {
+    // Only show voices for the selected provider.
+    // `availableVoices` from the store already accounts for whether API keys are present.
+    switch (activeTtsProvider) {
+      case 'Cartesia':
+        return availableVoices.filter(v => CARTESIA_VOICES.includes(v));
+      case 'Huggingface':
+        return availableVoices.filter(v => HUGGINGFACE_VOICES.includes(v));
+      case 'OpenAI Realtime':
+        return availableVoices.filter(v => OPENAI_VOICES.includes(v));
+      case 'Browser Default':
+      default:
+        // "Browser Default" uses Gemini's pre-built voices
+        return availableVoices.filter(v => GEMINI_VOICES.includes(v));
+    }
+  }, [activeTtsProvider, availableVoices]);
+
+  // Effect to reset voice if it's not in the displayed list
+  useEffect(() => {
+    if (displayedVoices.length > 0 && !displayedVoices.includes(voice)) {
+      setLocalVoice(displayedVoices[0]);
+    } else if (displayedVoices.length === 0 && voice !== DEFAULT_VOICE) {
+      setLocalVoice(DEFAULT_VOICE);
+    }
+  }, [displayedVoices, voice]);
 
   useEffect(() => {
     // When sidebar opens, reset local state to match global state
@@ -64,6 +141,8 @@ export default function Sidebar() {
       setLocalHuggingfaceApiKey(savedHuggingfaceKey);
       setLocalOpenAIKey(savedOpenAIKey);
       setLocalActiveTtsProvider(savedTtsProvider);
+      setLocalTranslationVolume(savedTranslationVolume);
+      setLocalTranslationMode(savedTranslationMode);
     }
   }, [
     isSidebarOpen,
@@ -73,6 +152,8 @@ export default function Sidebar() {
     savedHuggingfaceKey,
     savedOpenAIKey,
     savedTtsProvider,
+    savedTranslationVolume,
+    savedTranslationMode,
   ]);
 
   useEffect(() => {
@@ -82,7 +163,9 @@ export default function Sidebar() {
         cartesiaApiKey !== savedCartesiaKey ||
         huggingfaceApiKey !== savedHuggingfaceKey ||
         openaiApiKey !== savedOpenAIKey ||
-        activeTtsProvider !== savedTtsProvider,
+        activeTtsProvider !== savedTtsProvider ||
+        translationVolume !== savedTranslationVolume ||
+        translationMode !== savedTranslationMode,
     );
   }, [
     voice,
@@ -93,10 +176,14 @@ export default function Sidebar() {
     huggingfaceApiKey,
     openaiApiKey,
     activeTtsProvider,
+    translationVolume,
+    translationMode,
     savedCartesiaKey,
     savedHuggingfaceKey,
     savedOpenAIKey,
     savedTtsProvider,
+    savedTranslationVolume,
+    savedTranslationMode,
   ]);
 
   const handleSave = () => {
@@ -106,6 +193,8 @@ export default function Sidebar() {
     setHuggingfaceApiKey(huggingfaceApiKey);
     setOpenaiApiKey(openaiApiKey);
     setActiveTtsProvider(activeTtsProvider);
+    setTranslationVolume(translationVolume);
+    setTranslationMode(translationMode);
     setShowSaved(true);
     const timer = setTimeout(() => setShowSaved(false), 2000);
     return () => clearTimeout(timer);
@@ -123,13 +212,6 @@ export default function Sidebar() {
     setTimeout(() => {
       setIsLinkCopied(false);
     }, 2000);
-  };
-
-  const handleAddNewVoice = () => {
-    if (newVoiceName.trim()) {
-      addVoice(newVoiceName.trim());
-      setNewVoiceName('');
-    }
   };
 
   const handleUnlockServerSettings = () => {
@@ -179,6 +261,35 @@ export default function Sidebar() {
                 </select>
               </label>
               <label>
+                Translate Audio Source
+                <select
+                  value={translationMode}
+                  onChange={e =>
+                    setLocalTranslationMode(e.target.value as TranslationMode)
+                  }
+                >
+                  <option value="bidirectional">
+                    Bidirectional (Mic & Speakers)
+                  </option>
+                  <option value="incoming">Incoming (from Speakers)</option>
+                  <option value="outgoing">Outgoing (from Mic)</option>
+                  <option value="off">Off</option>
+                </select>
+              </label>
+              <label>
+                Translation Volume
+                <input
+                  type="range"
+                  min="0"
+                  max="1"
+                  step="0.05"
+                  value={translationVolume}
+                  onChange={e =>
+                    setLocalTranslationVolume(parseFloat(e.target.value))
+                  }
+                />
+              </label>
+              <label>
                 System Prompt
                 <textarea
                   value={systemPrompt}
@@ -192,7 +303,7 @@ export default function Sidebar() {
                   value={voice}
                   onChange={e => setLocalVoice(e.target.value)}
                 >
-                  {availableVoices.map(v => (
+                  {displayedVoices.map(v => (
                     <option key={v} value={v}>
                       {v}
                     </option>
@@ -264,25 +375,6 @@ export default function Sidebar() {
                     value={openaiApiKey}
                     onChange={e => setLocalOpenAIKey(e.target.value)}
                   />
-                </label>
-
-                <label>
-                  Add New TTS Voice
-                  <div className="add-voice-container">
-                    <input
-                      type="text"
-                      placeholder="Enter voice name"
-                      value={newVoiceName}
-                      onChange={e => setNewVoiceName(e.target.value)}
-                      onKeyDown={e => {
-                        if (e.key === 'Enter') {
-                          e.preventDefault();
-                          handleAddNewVoice();
-                        }
-                      }}
-                    />
-                    <button onClick={handleAddNewVoice}>Add</button>
-                  </div>
                 </label>
               </fieldset>
             )}

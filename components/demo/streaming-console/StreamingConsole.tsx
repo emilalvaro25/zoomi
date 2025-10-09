@@ -123,7 +123,8 @@ export default function StreamingConsole() {
       if (!text && !groundingChunks) return;
 
       const turns = useLogStore.getState().turns;
-      const last = turns.at(-1);
+      // FIX: Property 'at' does not exist on type 'ConversationTurn[]'. Replaced with index access.
+      const last = turns[turns.length - 1];
 
       if (last?.role === 'agent' && !last.isFinal) {
         const updatedTurn: Partial<ConversationTurn> = {
@@ -132,6 +133,7 @@ export default function StreamingConsole() {
         if (groundingChunks) {
           updatedTurn.groundingChunks = [
             ...(last.groundingChunks || []),
+            // FIX: Type 'import(".../node_modules/@google/genai/dist/genai").GroundingChunk[]' is not assignable to type 'import(".../lib/state").GroundingChunk[]'. This is resolved by updating the type in lib/state.ts.
             ...groundingChunks,
           ];
         }
@@ -142,7 +144,9 @@ export default function StreamingConsole() {
     };
 
     const handleTurnComplete = () => {
-      const last = useLogStore.getState().turns.at(-1);
+      const turns = useLogStore.getState().turns;
+      // FIX: Property 'at' does not exist on type 'ConversationTurn[]'. Replaced with index access.
+      const last = turns[turns.length - 1];
       if (last && !last.isFinal) {
         updateLastTurn({ isFinal: true });
       }
@@ -207,11 +211,12 @@ export default function StreamingConsole() {
                   <strong>Sources:</strong>
                   <ul>
                     {t.groundingChunks
-                      .filter(chunk => chunk.web)
+                      // FIX: Filter for chunks that have a web property with a URI to avoid rendering errors.
+                      .filter(chunk => chunk.web?.uri)
                       .map((chunk, index) => (
                         <li key={index}>
                           <a
-                            href={chunk.web!.uri}
+                            href={chunk.web!.uri!}
                             target="_blank"
                             rel="noopener noreferrer"
                           >

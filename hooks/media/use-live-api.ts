@@ -223,11 +223,7 @@ export function useLiveApi({
 
   useEffect(() => {
     const startVideoStreaming = () => {
-      if (
-        !videoRef.current ||
-        !client.session ||
-        frameIntervalRef.current
-      ) {
+      if (!videoRef.current || frameIntervalRef.current) {
         return;
       }
 
@@ -253,7 +249,11 @@ export function useLiveApi({
           async blob => {
             if (blob) {
               const base64Data = await blobToBase64(blob);
-              if (client.session) {
+
+              // Only send to Gemini if connected to the AI stream
+              // FIX: The `session` property is protected. The `connected` state variable
+              // is sufficient to check if the client is ready to send data.
+              if (connected) {
                 client.sendRealtimeInput([
                   {
                     mimeType: 'image/jpeg',
@@ -261,9 +261,10 @@ export function useLiveApi({
                   },
                 ]);
               }
-              // Broadcast frame to peers
+              // Always broadcast frame to peers if video is enabled
+              // FIX: The correct channel state for a subscribed channel is 'joined'.
               if (
-                videoChannelRef.current?.state === 'SUBSCRIBED' &&
+                videoChannelRef.current?.state === 'joined' &&
                 localParticipantUid
               ) {
                 videoChannelRef.current.send({
@@ -287,7 +288,7 @@ export function useLiveApi({
       }
     };
 
-    if (connected && videoEnabled) {
+    if (videoEnabled) {
       startVideoStreaming();
     } else {
       stopVideoStreaming();
