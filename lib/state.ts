@@ -20,6 +20,7 @@ import { supabase } from './supabase';
 import { getInitialVoices } from './voices';
 
 export type TranslationMode = 'off' | 'incoming' | 'outgoing' | 'bidirectional';
+export type VideoQuality = 'low' | 'medium' | 'high';
 
 /**
  * Settings
@@ -39,6 +40,7 @@ export const useSettings = create<{
   translationVolume: number;
   translationMode: TranslationMode;
   isSyncedTranslation: boolean;
+  videoQuality: VideoQuality;
   setModel: (model: string) => void;
   setVoice: (voice: string) => void;
   setLanguage: (language: string) => void;
@@ -53,6 +55,7 @@ export const useSettings = create<{
   setTranslationVolume: (volume: number) => void;
   setTranslationMode: (mode: TranslationMode) => void;
   setIsSyncedTranslation: (isSynced: boolean) => void;
+  setVideoQuality: (quality: VideoQuality) => void;
 }>()(
   persist(
     (set, get) => ({
@@ -70,6 +73,7 @@ export const useSettings = create<{
       translationVolume: 1.0,
       translationMode: 'bidirectional',
       isSyncedTranslation: false,
+      videoQuality: 'medium',
       setModel: model => set({ model }),
       setVoice: voice => set({ voice }),
       setLanguage: language => set({ language }),
@@ -99,6 +103,7 @@ export const useSettings = create<{
       setTranslationVolume: volume => set({ translationVolume: volume }),
       setTranslationMode: mode => set({ translationMode: mode }),
       setIsSyncedTranslation: isSynced => set({ isSyncedTranslation: isSynced }),
+      setVideoQuality: quality => set({ videoQuality: quality }),
     }),
     {
       name: 'zoom-settings-storage',

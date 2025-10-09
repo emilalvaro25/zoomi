@@ -7,6 +7,7 @@ import {
   useSettings,
   useUI,
   TranslationMode,
+  VideoQuality,
 } from '@/lib/state';
 import c from 'classnames';
 import {
@@ -46,6 +47,7 @@ export default function Sidebar() {
     translationVolume: savedTranslationVolume,
     translationMode: savedTranslationMode,
     isSyncedTranslation: savedIsSyncedTranslation,
+    videoQuality: savedVideoQuality,
     setVoice,
     setSystemPrompt,
     setAvailableVoices,
@@ -56,6 +58,7 @@ export default function Sidebar() {
     setTranslationVolume,
     setTranslationMode,
     setIsSyncedTranslation,
+    setVideoQuality,
   } = useSettings();
 
   const { localParticipant, setLanguage } = useParticipantStore();
@@ -76,6 +79,7 @@ export default function Sidebar() {
   const [isSyncedTranslation, setLocalIsSyncedTranslation] = useState(
     savedIsSyncedTranslation,
   );
+  const [videoQuality, setLocalVideoQuality] = useState(savedVideoQuality);
 
   const [isDirty, setIsDirty] = useState(false);
   const [showSaved, setShowSaved] = useState(false);
@@ -149,6 +153,7 @@ export default function Sidebar() {
       setLocalTranslationVolume(savedTranslationVolume);
       setLocalTranslationMode(savedTranslationMode);
       setLocalIsSyncedTranslation(savedIsSyncedTranslation);
+      setLocalVideoQuality(savedVideoQuality);
     }
   }, [
     isSidebarOpen,
@@ -161,6 +166,7 @@ export default function Sidebar() {
     savedTranslationVolume,
     savedTranslationMode,
     savedIsSyncedTranslation,
+    savedVideoQuality,
   ]);
 
   useEffect(() => {
@@ -173,7 +179,8 @@ export default function Sidebar() {
         activeTtsProvider !== savedTtsProvider ||
         translationVolume !== savedTranslationVolume ||
         translationMode !== savedTranslationMode ||
-        isSyncedTranslation !== savedIsSyncedTranslation,
+        isSyncedTranslation !== savedIsSyncedTranslation ||
+        videoQuality !== savedVideoQuality,
     );
   }, [
     voice,
@@ -187,6 +194,7 @@ export default function Sidebar() {
     translationVolume,
     translationMode,
     isSyncedTranslation,
+    videoQuality,
     savedCartesiaKey,
     savedHuggingfaceKey,
     savedOpenAIKey,
@@ -194,6 +202,7 @@ export default function Sidebar() {
     savedTranslationVolume,
     savedTranslationMode,
     savedIsSyncedTranslation,
+    savedVideoQuality,
   ]);
 
   const handleSave = () => {
@@ -206,6 +215,7 @@ export default function Sidebar() {
     setTranslationVolume(translationVolume);
     setTranslationMode(translationMode);
     setIsSyncedTranslation(isSyncedTranslation);
+    setVideoQuality(videoQuality);
     setShowSaved(true);
     const timer = setTimeout(() => setShowSaved(false), 2000);
     return () => clearTimeout(timer);
@@ -269,6 +279,19 @@ export default function Sidebar() {
                       {v}
                     </option>
                   ))}
+                </select>
+              </label>
+              <label>
+                Video Quality
+                <select
+                  value={videoQuality}
+                  onChange={e =>
+                    setLocalVideoQuality(e.target.value as VideoQuality)
+                  }
+                >
+                  <option value="low">Low (360p)</option>
+                  <option value="medium">Medium (720p)</option>
+                  <option value="high">High (1080p)</option>
                 </select>
               </label>
               <label>

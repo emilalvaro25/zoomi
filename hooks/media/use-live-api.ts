@@ -7,6 +7,7 @@
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
+ * You may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
  *     http://www.apache.org/licenses/LICENSE-2.0
@@ -36,6 +37,7 @@ import {
   useParticipantStore,
   useSettings,
   useUI,
+  VideoQuality,
 } from '@/lib/state';
 import { supabase } from '@/lib/supabase';
 import { RealtimeChannel } from '@supabase/supabase-js';
@@ -56,12 +58,31 @@ export type UseLiveApiResults = {
   videoRef: React.RefObject<HTMLVideoElement>;
 };
 
+const VIDEO_QUALITY_CONSTRAINTS: Record<VideoQuality, MediaTrackConstraints> = {
+  low: {
+    width: { ideal: 640 },
+    height: { ideal: 360 },
+    frameRate: { ideal: 15 },
+  },
+  medium: {
+    width: { ideal: 1280 },
+    height: { ideal: 720 },
+    frameRate: { ideal: 30 },
+  },
+  high: {
+    width: { ideal: 1920 },
+    height: { ideal: 1080 },
+    frameRate: { ideal: 30 },
+  },
+};
+
 export function useLiveApi({
   apiKey,
 }: {
   apiKey: string;
 }): UseLiveApiResults {
-  const { model, translationVolume, isTranslationEnabled } = useSettings();
+  const { model, translationVolume, isTranslationEnabled, videoQuality } =
+    useSettings();
   const client = useMemo(
     () => new GenAILiveClient(apiKey, model),
     [apiKey, model],
@@ -307,8 +328,41 @@ export function useLiveApi({
     };
   }, [connected, videoEnabled, client, localParticipantUid]);
 
-  const toggleVideo = useCallback(async () => {
+  const toggleVideo = useCallback(() => {
+    setVideoEnabled(v => !v);
+  }, []);
+
+  useEffect(() => {
     if (videoEnabled) {
+      let isCancelled = false;
+      const constraints = { video: VIDEO_QUALITY_CONSTRAINTS[videoQuality] };
+
+      // Stop previous tracks before getting new ones
+      if (videoRef.current && videoRef.current.srcObject) {
+        (videoRef.current.srcObject as MediaStream)
+          .getTracks()
+          .forEach(track => track.stop());
+      }
+
+      navigator.mediaDevices
+        .getUserMedia(constraints)
+        .then(stream => {
+          if (!isCancelled && videoRef.current) {
+            videoRef.current.srcObject = stream;
+            if (localParticipantUid) {
+              setCameraOff(localParticipantUid, false);
+            }
+          }
+        })
+        .catch(err => {
+          console.error('Error accessing webcam:', err);
+          setVideoEnabled(false); // Toggle off on error
+        });
+
+      return () => {
+        isCancelled = true;
+      };
+    } else {
       // Turn off video
       if (videoRef.current && videoRef.current.srcObject) {
         (videoRef.current.srcObject as MediaStream)
@@ -316,29 +370,22 @@ export function useLiveApi({
           .forEach(track => track.stop());
         videoRef.current.srcObject = null;
       }
-      setVideoEnabled(false);
       if (localParticipantUid) {
         setCameraOff(localParticipantUid, true);
       }
-    } else {
-      // Turn on video
-      try {
-        const stream = await navigator.mediaDevices.getUserMedia({
-          video: true,
-        });
-        if (videoRef.current) {
-          videoRef.current.srcObject = stream;
-        }
-        setVideoEnabled(true);
-        if (localParticipantUid) {
-          setCameraOff(localParticipantUid, false);
-        }
-      } catch (err) {
-        // FIX: Removed stray underscore from catch block
-        console.error('Error accessing webcam:', err);
-      }
     }
-  }, [videoEnabled, localParticipantUid, setCameraOff]);
+  }, [videoEnabled, videoQuality, localParticipantUid, setCameraOff]);
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (videoRef.current && videoRef.current.srcObject) {
+        (videoRef.current.srcObject as MediaStream)
+          .getTracks()
+          .forEach(track => track.stop());
+      }
+    };
+  }, []);
 
   return {
     client,
