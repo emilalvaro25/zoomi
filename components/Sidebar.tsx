@@ -2,26 +2,26 @@
  * @license
  * SPDX-License-Identifier: Apache-2.0
 */
-import { useSettings, useUI } from '@/lib/state';
+import { useParticipantStore, useSettings, useUI } from '@/lib/state';
 import c from 'classnames';
 import { AVAILABLE_VOICES, AVAILABLE_LANGUAGES } from '@/lib/constants';
 import { useLiveAPIContext } from '@/contexts/LiveAPIContext';
-import StreamingConsole from './demo/streaming-console/StreamingConsole';
-import { useEffect, useState } from 'react';
+// FIX: Import React to resolve namespace issue for React.ChangeEvent.
+import React, { useEffect, useState } from 'react';
 
 export default function Sidebar() {
   const { isSidebarOpen, toggleSidebar } = useUI();
   const {
     voice: savedVoice,
-    language: savedLanguage,
     systemPrompt: savedSystemPrompt,
     setVoice,
-    setLanguage,
     setSystemPrompt,
   } = useSettings();
+
+  const { localParticipant, setLanguage } = useParticipantStore();
+
   const { connected } = useLiveAPIContext();
   const [voice, setLocalVoice] = useState(savedVoice);
-  const [language, setLocalLanguage] = useState(savedLanguage);
   const [systemPrompt, setLocalSystemPrompt] = useState(savedSystemPrompt);
   const [isDirty, setIsDirty] = useState(false);
   const [showSaved, setShowSaved] = useState(false);
@@ -30,33 +30,28 @@ export default function Sidebar() {
     // When sidebar opens, reset local state to match global state
     if (isSidebarOpen) {
       setLocalVoice(savedVoice);
-      setLocalLanguage(savedLanguage);
       setLocalSystemPrompt(savedSystemPrompt);
     }
-  }, [isSidebarOpen, savedVoice, savedLanguage, savedSystemPrompt]);
+  }, [isSidebarOpen, savedVoice, savedSystemPrompt]);
 
   useEffect(() => {
     setIsDirty(
-      voice !== savedVoice ||
-        language !== savedLanguage ||
-        systemPrompt !== savedSystemPrompt,
+      voice !== savedVoice || systemPrompt !== savedSystemPrompt,
     );
-  }, [
-    voice,
-    language,
-    systemPrompt,
-    savedVoice,
-    savedLanguage,
-    savedSystemPrompt,
-  ]);
+  }, [voice, systemPrompt, savedVoice, savedSystemPrompt]);
 
   const handleSave = () => {
     setVoice(voice);
-    setLanguage(language);
     setSystemPrompt(systemPrompt);
     setShowSaved(true);
     const timer = setTimeout(() => setShowSaved(false), 2000);
     return () => clearTimeout(timer);
+  };
+
+  const handleLanguageChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    if (localParticipant) {
+      setLanguage(localParticipant.uid, e.target.value);
+    }
   };
 
   return (
@@ -71,6 +66,19 @@ export default function Sidebar() {
         <div className="sidebar-content">
           <div className="sidebar-section">
             <fieldset disabled={connected}>
+              <label>
+                My Language
+                <select
+                  value={localParticipant?.language}
+                  onChange={handleLanguageChange}
+                >
+                  {AVAILABLE_LANGUAGES.map(v => (
+                    <option key={v} value={v}>
+                      {v}
+                    </option>
+                  ))}
+                </select>
+              </label>
               <label>
                 System Prompt
                 <textarea
@@ -92,15 +100,20 @@ export default function Sidebar() {
                   ))}
                 </select>
               </label>
-              <p className="description" style={{fontSize: '12px', color: 'var(--Neutral-60)', marginTop: '-8px'}}>
-                Note: The voice setting applies to the translation audio for students. The language is set by each student upon joining.
+              <p
+                className="description"
+                style={{
+                  fontSize: '12px',
+                  color: 'var(--Neutral-60)',
+                  marginTop: '-8px',
+                }}
+              >
+                Note: The voice setting applies to the translation audio for all
+                participants.
               </p>
             </fieldset>
           </div>
-          <div className="sidebar-section transcript-section">
-            <h4 className="sidebar-section-title">Your Live Transcription</h4>
-            <StreamingConsole />
-          </div>
+
           <div className="sidebar-footer">
             {showSaved && (
               <span className="saved-message">Settings saved!</span>

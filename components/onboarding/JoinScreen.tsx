@@ -1,22 +1,16 @@
 import React, { useState, useEffect } from 'react';
-import { useUI, useParticipantStore, useSettings } from '@/lib/state';
-import { AVAILABLE_LANGUAGES } from '@/lib/constants';
+import { useUI, useParticipantStore } from '@/lib/state';
 import './JoinScreen.css';
 import { supabase } from '@/lib/supabase';
-import { useAuth } from '@/lib/auth';
 
 const JoinScreen: React.FC = () => {
   const [name, setName] = useState('');
   const { setHasJoined, setShareModalOpen } = useUI();
-  const { addLocalParticipant } = useParticipantStore();
-  const { language, setLanguage } = useSettings();
+  const { addLocalParticipant, setLocalParticipantUid } = useParticipantStore();
   const [error, setError] = useState('');
-  const { session } = useAuth();
   const meetingId = useUI(state => state.meetingId);
   const setMeetingId = useUI(state => state.setMeetingId);
 
-  // BUG FIX: Parse URL for meetingId as soon as the component mounts
-  // This prevents a race condition where a joining user is treated as a host
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
     const id = urlParams.get('meetingId');
@@ -25,8 +19,6 @@ const JoinScreen: React.FC = () => {
     }
   }, [setMeetingId]);
 
-  const isJoining = !!meetingId;
-
   const handleJoin = async () => {
     if (!name.trim()) {
       setError('Please enter your name.');
@@ -34,11 +26,7 @@ const JoinScreen: React.FC = () => {
     }
     setError('');
 
-    const uid = session?.user.id;
-    if (!uid) {
-      setError('You must be logged in to join.');
-      return;
-    }
+    const uid = crypto.randomUUID();
 
     try {
       await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
@@ -48,41 +36,34 @@ const JoinScreen: React.FC = () => {
         setMeetingId(currentMeetingId);
       }
 
-      const role = isJoining ? 'student' : 'host';
-
-      // WORKAROUND for RLS policy on UPDATE:
-      // First, delete any existing participant record for this user.
-      // This is safer than upsert if the UPDATE policy is restrictive (e.g., prevents changing meeting_id).
-      const { error: deleteError } = await supabase
+      // Determine role: first person in is host
+      const { data: existingParticipants, error: fetchError } = await supabase
         .from('participants')
-        .delete()
-        .eq('uid', uid);
+        .select('uid')
+        .eq('meeting_id', currentMeetingId)
+        .limit(1);
 
-      // We can ignore deleteError if the row didn't exist, the insert will work.
-      // If the row exists and we can't delete it, the insert will fail on UNIQUE constraint,
-      // and we'll show that error.
-      if (deleteError) {
-        console.warn(
-          'Supabase: Could not delete prior participant record. This may be ok if one did not exist.',
-          deleteError,
-        );
-      }
+      if (fetchError) throw fetchError;
+      const role = existingParticipants.length > 0 ? 'student' : 'host';
+      const language = role === 'host' ? 'English' : 'Spanish'; // Default student language
 
-      // Now, insert the new participant record.
-      const { error: insertError } = await supabase.from('participants').insert({
-        uid,
-        name,
-        is_muted: role === 'student',
-        is_camera_off: true,
-        is_hand_raised: false,
-        meeting_id: currentMeetingId,
-        role: role,
-        language: role === 'student' ? language : 'English',
-      });
+      const { error: insertError } = await supabase
+        .from('participants')
+        .insert({
+          uid,
+          name,
+          is_muted: role === 'student',
+          is_camera_off: true,
+          is_hand_raised: false,
+          meeting_id: currentMeetingId,
+          role: role,
+          language: language,
+        });
 
       if (insertError) throw new Error(insertError.message);
 
-      addLocalParticipant(name, role, language);
+      setLocalParticipantUid(uid);
+      addLocalParticipant(name, role, uid, language);
       setHasJoined(true);
 
       if (role === 'host') {
@@ -106,12 +87,8 @@ const JoinScreen: React.FC = () => {
   return (
     <div className="join-screen-overlay">
       <div className="join-screen-container">
-        <h2>{isJoining ? 'Join Meeting' : 'New Meeting'}</h2>
-        <p>
-          {isJoining
-            ? 'Set up your display name and language before joining.'
-            : 'Enter your name to start a new meeting as the host.'}
-        </p>
+        <h2>Join Meeting</h2>
+        <p>Enter your name to join the meeting.</p>
         <div className="join-form">
           <label htmlFor="join-name">Your Name</label>
           <input
@@ -121,29 +98,11 @@ const JoinScreen: React.FC = () => {
             value={name}
             onChange={e => setName(e.target.value)}
           />
-          {isJoining && (
-            <>
-              <label htmlFor="join-language">Your Language</label>
-              <select
-                id="join-language"
-                value={language}
-                onChange={e => setLanguage(e.target.value)}
-              >
-                {AVAILABLE_LANGUAGES.map(lang => (
-                  <option key={lang} value={lang}>
-                    {lang}
-                  </option>
-                ))}
-              </select>
-            </>
-          )}
-
           {error && <p className="error-text">{error}</p>}
           <button onClick={handleJoin} className="join-button">
-            {isJoining ? 'Join Now' : 'Start New Meeting'}
+            Join Meeting
           </button>
         </div>
-
         <div className="permissions-info">
           <p>You'll be asked for permission to use your:</p>
           <ul>

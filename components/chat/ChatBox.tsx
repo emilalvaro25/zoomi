@@ -28,7 +28,7 @@ const ChatBox: React.FC = () => {
       if (error) {
         console.error('Error fetching messages:', error);
       } else if (data) {
-        setMessages(data.filter(m => m.is_final)); // Only show final chat messages
+        setMessages(data);
       }
     };
 
@@ -46,9 +46,23 @@ const ChatBox: React.FC = () => {
           filter: `meeting_id=eq.${meetingId}`,
         },
         payload => {
-          if (payload.new.is_final) {
-            setMessages(prevMessages => [...prevMessages, payload.new as Message]);
-          }
+          setMessages(prevMessages => [...prevMessages, payload.new as Message]);
+        },
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'messages',
+          filter: `meeting_id=eq.${meetingId}`,
+        },
+        payload => {
+          setMessages(prevMessages =>
+            prevMessages.map(msg =>
+              msg.id === payload.new.id ? (payload.new as Message) : msg,
+            ),
+          );
         },
       )
       .subscribe();

@@ -65,7 +65,7 @@ export function useLiveApi({
   );
 
   const audioStreamerRef = useRef<AudioStreamer | null>(null);
-  const { localParticipantId, setCameraOff } = useParticipantStore();
+  const { localParticipantUid, setCameraOff } = useParticipantStore();
 
   const [volume, setVolume] = useState(0);
   const [connected, setConnected] = useState(false);
@@ -275,8 +275,8 @@ export function useLiveApi({
         videoRef.current.srcObject = null;
       }
       setVideoEnabled(false);
-      if (localParticipantId) {
-        setCameraOff(localParticipantId, true);
+      if (localParticipantUid) {
+        setCameraOff(localParticipantUid, true);
       }
     } else {
       // Turn on video
@@ -288,15 +288,15 @@ export function useLiveApi({
           videoRef.current.srcObject = stream;
         }
         setVideoEnabled(true);
-        if (localParticipantId) {
-          setCameraOff(localParticipantId, false);
+        if (localParticipantUid) {
+          setCameraOff(localParticipantUid, false);
         }
       } catch (err) {
         // FIX: Removed stray underscore from catch block
         console.error('Error accessing webcam:', err);
       }
     }
-  }, [videoEnabled, localParticipantId, setCameraOff]);
+  }, [videoEnabled, localParticipantUid, setCameraOff]);
 
   return {
     client,

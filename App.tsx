@@ -24,15 +24,13 @@ import ErrorScreen from './components/demo/ErrorScreen';
 
 import { LiveAPIProvider } from './contexts/LiveAPIContext';
 import { useUI, useParticipantStore } from './lib/state';
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState } from 'react';
 import ParticipantList from './components/participant-list/ParticipantList';
 import JoinScreen from './components/onboarding/JoinScreen';
 import SubtitleOverlay from './components/demo/subtitle-overlay/SubtitleOverlay';
 import Header from './components/Header';
 import Sidebar from './components/Sidebar';
 import { supabase } from './lib/supabase';
-import { useAuth } from './lib/auth';
-import AuthScreen from './components/onboarding/AuthScreen';
 import MeetingGrid from './components/meeting-grid/MeetingGrid';
 import { translateText } from './lib/gemini';
 import { useLiveAPIContext } from './contexts/LiveAPIContext';
@@ -57,32 +55,15 @@ function AppContent() {
     setParticipants,
     addOrUpdateParticipant,
     removeParticipant,
-    setLocalParticipantId,
   } = useParticipantStore();
-  const { session, setSession } = useAuth();
   const meetingId = useUI(state => state.meetingId);
 
-  const [translatedSubtitle, setTranslatedSubtitle] = useState('');
-  const [isSubtitleFinal, setIsSubtitleFinal] = useState(false);
+  const [activeSubtitle, setActiveSubtitle] = useState({
+    text: '',
+    isFinal: false,
+  });
 
   const { client } = useLiveAPIContext();
-
-  // Handle auth state changes
-  useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setLocalParticipantId(session?.user.id ?? null);
-    });
-
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session);
-      setLocalParticipantId(session?.user.id ?? null);
-    });
-
-    return () => subscription.unsubscribe();
-  }, [setSession, setLocalParticipantId]);
 
   // Handle fullscreen changes
   useEffect(() => {
@@ -113,7 +94,8 @@ function AppContent() {
       if (data) {
         const mappedParticipants = data.map(p => ({
           uid: p.uid,
-          name: p.uid === localParticipant.uid ? `${p.name} (You)` : p.name,
+          name:
+            p.uid === localParticipant.uid ? `${p.name} (You)` : p.name,
           isMuted: p.is_muted,
           isCameraOff: p.is_camera_off,
           isHandRaised: p.is_hand_raised,
@@ -150,7 +132,6 @@ function AppContent() {
               isMuted: p.is_muted,
               isCameraOff: p.is_camera_off,
               isHandRaised: p.is_hand_raised,
-              isLocal: p.uid === localParticipant.uid,
               role: p.role,
               language: p.language,
             });
@@ -173,20 +154,20 @@ function AppContent() {
     removeParticipant,
   ]);
 
-  // Host: Handle sending own transcription to DB
+  // Handle sending own transcription to DB for all participants
   useEffect(() => {
-    if (localParticipant?.role !== 'host') return;
+    if (!hasJoined || !localParticipant?.uid) return;
 
     let lastMessageId: string | null = null;
     const handleInputTranscription = async (text: string, isFinal: boolean) => {
-      if (!meetingId || !localParticipant.uid) return;
+      if (!meetingId || !localParticipant.uid || !text.trim()) return;
 
       const messagePayload = {
         meeting_id: meetingId,
         participant_id: localParticipant.uid,
         text,
         is_final: isFinal,
-        source_language: 'English',
+        source_language: localParticipant.language || 'English',
       };
 
       if (lastMessageId && !isFinal) {
@@ -195,7 +176,7 @@ function AppContent() {
           .from('messages')
           .update({ text })
           .eq('id', lastMessageId);
-      } else {
+      } else if (isFinal || !lastMessageId) {
         // Insert new message
         const { data } = await supabase
           .from('messages')
@@ -215,32 +196,35 @@ function AppContent() {
     return () => {
       client.off('inputTranscription', handleInputTranscription);
     };
-  }, [client, localParticipant, meetingId]);
+  }, [client, hasJoined, localParticipant, meetingId]);
 
-  // Student: Handle receiving host's transcription for translation
+  // Handle receiving remote transcriptions for translation
   useEffect(() => {
-    if (localParticipant?.role !== 'student' || !localParticipant.language) {
+    if (!hasJoined || !localParticipant?.language) {
       return;
     }
 
     const speak = (text: string) => {
+      // Cancel any previous speech
+      window.speechSynthesis.cancel();
       const utterance = new SpeechSynthesisUtterance(text);
-      // Find a voice that matches the student's language if possible
+      // Find a voice that matches the user's language if possible
       const voices = window.speechSynthesis.getVoices();
       const studentLang = localParticipant.language?.split(' ')[0].toLowerCase();
-      const voice = voices.find(v => v.lang.toLowerCase().startsWith(studentLang));
+      const voice = voices.find(v =>
+        v.lang.toLowerCase().startsWith(studentLang),
+      );
       if (voice) {
         utterance.voice = voice;
       }
       window.speechSynthesis.speak(utterance);
     };
 
-    const handleHostMessage = async (text: string, isFinal: boolean) => {
-      if (!localParticipant.language) return;
+    const handleRemoteMessage = async (text: string, isFinal: boolean) => {
+      if (!localParticipant.language || !text.trim()) return;
       try {
         const translated = await translateText(text, localParticipant.language);
-        setTranslatedSubtitle(translated);
-        setIsSubtitleFinal(isFinal);
+        setActiveSubtitle({ text: translated, isFinal });
         if (isFinal) {
           speak(translated);
         }
@@ -250,7 +234,7 @@ function AppContent() {
     };
 
     const channel = supabase
-      .channel(`messages-${meetingId}-student`)
+      .channel(`messages-${meetingId}-all`)
       .on(
         'postgres_changes',
         {
@@ -260,13 +244,14 @@ function AppContent() {
           filter: `meeting_id=eq.${meetingId}`,
         },
         async payload => {
-          const message = payload.new;
-          const host = useParticipantStore
-            .getState()
-            .participants.find(p => p.role === 'host');
-
-          if (host && message.participant_id === host.uid) {
-            handleHostMessage(message.text, message.is_final);
+          const message = payload.new as {
+            text: string;
+            is_final: boolean;
+            participant_id: string;
+          };
+          // Don't process our own messages or chat messages
+          if (message && message.participant_id !== localParticipant.uid) {
+            handleRemoteMessage(message.text, message.is_final);
           }
         },
       )
@@ -275,7 +260,7 @@ function AppContent() {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [localParticipant, meetingId]);
+  }, [hasJoined, localParticipant, meetingId]);
 
   // Graceful disconnect
   useEffect(() => {
@@ -293,19 +278,17 @@ function AppContent() {
     };
   }, [localParticipant?.uid]);
 
-  if (!session) {
-    return <AuthScreen />;
-  }
-
   if (!hasJoined) {
     return <JoinScreen />;
   }
 
   return (
     <div className={cn('App', { 'full-screen': isFullScreen })}>
-      {isShareModalOpen && <ShareLinkModal onClose={() => setShareModalOpen(false)} />}
+      {isShareModalOpen && (
+        <ShareLinkModal onClose={() => setShareModalOpen(false)} />
+      )}
       <Header />
-      {localParticipant?.role === 'host' && <Sidebar />}
+      <Sidebar />
       <ErrorScreen />
       <div className="app-layout">
         <ParticipantList className={cn({ open: isParticipantListOpen })} />
@@ -313,12 +296,10 @@ function AppContent() {
           <main>
             <div className="main-app-area">
               <MeetingGrid />
-              {localParticipant?.role === 'student' && (
-                <SubtitleOverlay
-                  text={translatedSubtitle}
-                  isFinal={isSubtitleFinal}
-                />
-              )}
+              <SubtitleOverlay
+                text={activeSubtitle.text}
+                isFinal={activeSubtitle.isFinal}
+              />
             </div>
             <ControlTray />
           </main>

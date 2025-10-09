@@ -80,6 +80,10 @@
   word-wrap: break-word;
 }
 
+.message-content.interim {
+  opacity: 0.7;
+}
+
 .message-content .translated-text {
   font-style: italic;
   color: var(--Neutral-80);

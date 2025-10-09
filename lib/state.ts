@@ -16,7 +16,6 @@ import {
   LiveServerToolCall,
 } from '@google/genai';
 import { supabase } from './supabase';
-import { useAuth } from './auth';
 
 /**
  * Settings
@@ -177,48 +176,50 @@ export interface Participant {
   isMuted: boolean;
   isCameraOff: boolean;
   isHandRaised: boolean;
-  isLocal: boolean;
   role: 'host' | 'student';
   language?: string;
+  isLocal?: boolean;
 }
 
 export const useParticipantStore = create<{
   participants: Participant[];
   localParticipant: Participant | null;
+  localParticipantUid: string | null;
   speakingParticipantUid: string | null;
   pinnedParticipantUid: string | null;
   setPinnedParticipant: (uid: string | null) => void;
   setSpeakingParticipant: (uid: string | null) => void;
-  setLocalParticipantId: (uid: string | null) => void;
+  setLocalParticipantUid: (uid: string | null) => void;
   addLocalParticipant: (
     name: string,
     role: 'host' | 'student',
+    uid: string,
     language?: string,
   ) => void;
   setParticipants: (participants: Participant[]) => void;
-  addOrUpdateParticipant: (participant: Participant) => void;
+  addOrUpdateParticipant: (participant: Omit<Participant, 'isLocal'>) => void;
   removeParticipant: (uid: string) => void;
   setMuted: (uid: string, isMuted: boolean) => Promise<void>;
   setCameraOff: (uid: string, isCameraOff: boolean) => Promise<void>;
   setHandRaised: (uid: string, isHandRaised: boolean) => Promise<void>;
+  setLanguage: (uid: string, language: string) => Promise<void>;
   setAllMuted: (isMuted: boolean) => Promise<void>;
 }>((set, get) => ({
   participants: [],
   localParticipant: null,
+  localParticipantUid: null,
   speakingParticipantUid: null,
   pinnedParticipantUid: null,
   setPinnedParticipant: uid => set({ pinnedParticipantUid: uid }),
   setSpeakingParticipant: (uid: string | null) =>
     set({ speakingParticipantUid: uid }),
-  setLocalParticipantId: (uid: string | null) => {
+  setLocalParticipantUid: (uid: string | null) => {
+    set({ localParticipantUid: uid });
     if (uid) {
-      set(state => {
-        const p = state.participants.find(p => p.uid === uid && p.isLocal);
-        if (p) {
-          return { localParticipant: p };
-        }
-        return state;
-      });
+      const p = get().participants.find(p => p.uid === uid);
+      if (p) {
+        set({ localParticipant: { ...p, isLocal: true } });
+      }
     } else {
       set({ localParticipant: null });
     }
@@ -226,12 +227,11 @@ export const useParticipantStore = create<{
   addLocalParticipant: (
     name: string,
     role: 'host' | 'student',
+    uid: string,
     language?: string,
   ) => {
-    const { session } = useAuth.getState();
-    const uid = session?.user.id;
     if (!uid) {
-      console.error('Cannot add local participant without a session.');
+      console.error('Cannot add local participant without a uid.');
       return;
     }
     const newParticipant: Participant = {
@@ -246,29 +246,32 @@ export const useParticipantStore = create<{
     };
     set(state => {
       // Avoid duplicates on re-join
-      const otherParticipants = state.participants.filter(p => !p.isLocal);
+      const otherParticipants = state.participants.filter(p => p.uid !== uid);
       return {
         participants: [...otherParticipants, newParticipant],
         localParticipant: newParticipant,
+        localParticipantUid: uid,
       };
     });
   },
   setParticipants: (participants: Participant[]) => {
     set({ participants });
   },
-  addOrUpdateParticipant: (participant: Participant) => {
+  addOrUpdateParticipant: (participant: Omit<Participant, 'isLocal'>) => {
     set(state => {
-      const existing = state.participants.find(p => p.uid === participant.uid);
+      const isForLocalUser = participant.uid === state.localParticipantUid;
+      const finalParticipant = { ...participant, isLocal: isForLocalUser };
+
+      const existing = state.participants.find(p => p.uid === finalParticipant.uid);
       const newParticipants = existing
         ? state.participants.map(p =>
-            p.uid === participant.uid ? { ...p, ...participant } : p,
+            p.uid === finalParticipant.uid ? { ...p, ...finalParticipant } : p,
           )
-        : [...state.participants, participant];
+        : [...state.participants, finalParticipant];
 
-      const newLocalParticipant =
-        participant.isLocal || participant.uid === state.localParticipant?.uid
-          ? participant
-          : state.localParticipant;
+      const newLocalParticipant = isForLocalUser
+        ? finalParticipant
+        : state.localParticipant;
 
       return {
         participants: newParticipants,
@@ -318,6 +321,23 @@ export const useParticipantStore = create<{
       await supabase
         .from('participants')
         .update({ is_hand_raised: isHandRaised })
+        .eq('uid', uid);
+    }
+  },
+  setLanguage: async (uid: string, language: string) => {
+    set(state => ({
+      participants: state.participants.map(p =>
+        p.uid === uid ? { ...p, language } : p,
+      ),
+      localParticipant:
+        uid === state.localParticipantUid
+          ? { ...state.localParticipant!, language }
+          : state.localParticipant,
+    }));
+    if (uid === get().localParticipantUid) {
+      await supabase
+        .from('participants')
+        .update({ language: language })
         .eq('uid', uid);
     }
   },

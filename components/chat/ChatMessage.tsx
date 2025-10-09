@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParticipantStore } from '@/lib/state';
 import { translateText } from '@/lib/gemini';
+import cn from 'classnames';
 
 export interface Message {
   id: string;
@@ -36,17 +37,22 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message }) => {
         }
       }
     };
-    translateForHost();
-  }, [isHost, isFromStudent, message.text]);
+
+    if (message.is_final) {
+      translateForHost();
+    }
+  }, [isHost, isFromStudent, message.text, message.is_final]);
 
   if (!sender) return null;
 
   return (
     <div className="chat-message">
-      <div className={`message-header ${isLocal ? 'local' : ''}`}>
+      <div className={cn('message-header', { local: isLocal })}>
         {sender.name}
       </div>
-      <div className="message-content">
+      <div
+        className={cn('message-content', { interim: !message.is_final })}
+      >
         <span>{message.text}</span>
         {translatedText && (
           <div className="translated-text">{translatedText}</div>

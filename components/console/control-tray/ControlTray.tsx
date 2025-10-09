@@ -11,7 +11,7 @@
  *
  *     http://www.apache.org/licenses/LICENSE-2.0
  *
- * Unless required by applicable law of atelecTbody agreed to in writing, software
+ * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
@@ -41,7 +41,7 @@ export type ControlTrayProps = {
 function ControlTray({ children }: ControlTrayProps) {
   const [audioRecorder] = useState(() => new AudioRecorder());
   const localParticipant = useParticipantStore(state => state.localParticipant);
-  const [muted, setMuted] = useState(localParticipant?.role === 'student');
+  const [muted, setMuted] = useState(true);
   const connectButtonRef = useRef<HTMLButtonElement>(null);
   const {
     isFullScreen,
@@ -72,7 +72,10 @@ function ControlTray({ children }: ControlTrayProps) {
 
   // Speaker Detection Effect
   useEffect(() => {
-    if (localParticipant?.role !== 'host') return;
+    if (!connected || muted) {
+      setSpeakingParticipant(null);
+      return;
+    }
 
     let speakingTimeout: number | null = null;
 
@@ -99,17 +102,19 @@ function ControlTray({ children }: ControlTrayProps) {
       // Ensure the speaking state is cleared on unmount
       setSpeakingParticipant(null);
     };
-  }, [audioRecorder, localParticipant, setSpeakingParticipant]);
+  }, [audioRecorder, localParticipant, setSpeakingParticipant, connected, muted]);
 
   useEffect(() => {
-    const remoteParticipants = participants.filter(p => !p.isLocal);
+    const remoteParticipants = participants.filter(
+      p => p.uid !== localParticipant?.uid,
+    );
     if (remoteParticipants.length === 0) {
       setIsAllMuted(false);
       return;
     }
     const allRemotesMuted = remoteParticipants.every(p => p.isMuted);
     setIsAllMuted(allRemotesMuted);
-  }, [participants]);
+  }, [participants, localParticipant]);
 
   useEffect(() => {
     if (!connected && connectButtonRef.current) {
@@ -119,9 +124,7 @@ function ControlTray({ children }: ControlTrayProps) {
 
   useEffect(() => {
     if (localParticipant) {
-      // Muted is true if not connected or explicitly muted, or if student
-      const newMutedState =
-        !connected || muted || localParticipant.role === 'student';
+      const newMutedState = !connected || muted;
       setParticipantMuted(localParticipant.uid, newMutedState);
     }
   }, [muted, connected, localParticipant, setParticipantMuted]);
@@ -212,11 +215,10 @@ function ControlTray({ children }: ControlTrayProps) {
   const handleConnectToggle = () => {
     if (connected) {
       disconnect();
+      setMuted(true); // Mute on disconnect
     } else {
       connect();
-      if (localParticipant?.role === 'host') {
-        setMuted(false); // Unmute on connect for host
-      }
+      setMuted(false); // Unmute on connect
     }
   };
 
@@ -244,10 +246,11 @@ function ControlTray({ children }: ControlTrayProps) {
     ? 'Lower hand'
     : 'Raise hand';
 
-  const remoteParticipantsExist = participants.some(p => !p.isLocal);
+  const remoteParticipantsExist = participants.some(
+    p => p.uid !== localParticipant?.uid,
+  );
 
   const isHost = localParticipant?.role === 'host';
-  const isStudent = localParticipant?.role === 'student';
 
   return (
     <section className={cn('control-tray', { 'full-screen': isFullScreen })}>
@@ -256,9 +259,9 @@ function ControlTray({ children }: ControlTrayProps) {
           className={cn('action-button mic-button')}
           onClick={handleMicClick}
           title={micButtonTitle}
-          disabled={!connected || isStudent}
+          disabled={!connected}
         >
-          {muted || isStudent ? (
+          {muted ? (
             <span className="material-symbols-outlined filled">mic_off</span>
           ) : (
             <span className="material-symbols-outlined filled">mic</span>

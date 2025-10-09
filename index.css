@@ -1360,3 +1360,7 @@ header h1 {
     gap: 10px;
   }
 }
+
+.message-content.interim {
+  opacity: 0.6;
+}
