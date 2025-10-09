@@ -7,7 +7,6 @@
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
- * You may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
  *     http://www.apache.org/licenses/LICENSE-2.0
@@ -41,6 +40,7 @@ import {
 } from '@/lib/state';
 import { supabase } from '@/lib/supabase';
 import { RealtimeChannel } from '@supabase/supabase-js';
+import { cancel as cancelTTS } from '../../lib/tts';
 
 export type UseLiveApiResults = {
   client: GenAILiveClient;
@@ -74,6 +74,24 @@ const VIDEO_QUALITY_CONSTRAINTS: Record<VideoQuality, MediaTrackConstraints> = {
     height: { ideal: 1080 },
     frameRate: { ideal: 30 },
   },
+};
+
+const getScaledDimensions = (
+  width: number,
+  height: number,
+  maxDimension: number,
+): { width: number; height: number } => {
+  if (width <= maxDimension && height <= maxDimension) {
+    return { width, height };
+  }
+
+  if (width > height) {
+    const newHeight = Math.round(height * (maxDimension / width));
+    return { width: maxDimension, height: newHeight };
+  } else {
+    const newWidth = Math.round(width * (maxDimension / height));
+    return { width: newWidth, height: maxDimension };
+  }
 };
 
 export function useLiveApi({
@@ -146,6 +164,7 @@ export function useLiveApi({
     };
 
     const onAudio = (data: ArrayBuffer) => {
+      cancelTTS(); // Prevent translated TTS from overlapping with agent speech
       if (audioStreamerRef.current) {
         audioStreamerRef.current.addPCM16(new Uint8Array(data));
       }
@@ -275,9 +294,19 @@ export function useLiveApi({
         if (!videoEl.videoWidth || !videoEl.videoHeight) {
           return;
         }
-        canvasEl.width = videoEl.videoWidth;
-        canvasEl.height = videoEl.videoHeight;
-        ctx.drawImage(videoEl, 0, 0, videoEl.videoWidth, videoEl.videoHeight);
+
+        const MAX_BROADCAST_DIMENSION = 720;
+        const { width: scaledWidth, height: scaledHeight } =
+          getScaledDimensions(
+            videoEl.videoWidth,
+            videoEl.videoHeight,
+            MAX_BROADCAST_DIMENSION,
+          );
+
+        canvasEl.width = scaledWidth;
+        canvasEl.height = scaledHeight;
+        ctx.drawImage(videoEl, 0, 0, scaledWidth, scaledHeight);
+
         canvasEl.toBlob(
           async blob => {
             if (blob) {
@@ -307,7 +336,7 @@ export function useLiveApi({
           'image/jpeg',
           0.5, // Lower quality to reduce payload size
         );
-      }, 100); // 10 FPS
+      }, 200); // 5 FPS
     };
 
     const stopVideoStreaming = () => {
