@@ -35,7 +35,10 @@ import {
   useLogStore,
   useParticipantStore,
   useSettings,
+  useUI,
 } from '@/lib/state';
+import { supabase } from '@/lib/supabase';
+import { RealtimeChannel } from '@supabase/supabase-js';
 
 export type UseLiveApiResults = {
   client: GenAILiveClient;
@@ -66,6 +69,7 @@ export function useLiveApi({
 
   const audioStreamerRef = useRef<AudioStreamer | null>(null);
   const { localParticipantUid, setCameraOff } = useParticipantStore();
+  const meetingId = useUI(state => state.meetingId);
 
   const [volume, setVolume] = useState(0);
   const [connected, setConnected] = useState(false);
@@ -75,6 +79,7 @@ export function useLiveApi({
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const frameIntervalRef = useRef<number | null>(null);
+  const videoChannelRef = useRef<RealtimeChannel | null>(null);
 
   // register audio for streaming server -> speakers
   useEffect(() => {
@@ -173,6 +178,21 @@ export function useLiveApi({
     };
   }, [client]);
 
+  // Effect to manage the Supabase channel for broadcasting video
+  useEffect(() => {
+    if (meetingId && !videoChannelRef.current) {
+      const channel = supabase.channel(`video-stream-${meetingId}`);
+      videoChannelRef.current = channel;
+      channel.subscribe();
+    }
+    return () => {
+      if (videoChannelRef.current) {
+        supabase.removeChannel(videoChannelRef.current);
+        videoChannelRef.current = null;
+      }
+    };
+  }, [meetingId]);
+
   const connect = useCallback(async () => {
     if (!config) {
       throw new Error('config has not been set');
@@ -231,20 +251,33 @@ export function useLiveApi({
         ctx.drawImage(videoEl, 0, 0, videoEl.videoWidth, videoEl.videoHeight);
         canvasEl.toBlob(
           async blob => {
-            if (blob && client.session) {
+            if (blob) {
               const base64Data = await blobToBase64(blob);
-              client.sendRealtimeInput([
-                {
-                  mimeType: 'image/jpeg',
-                  data: base64Data,
-                },
-              ]);
+              if (client.session) {
+                client.sendRealtimeInput([
+                  {
+                    mimeType: 'image/jpeg',
+                    data: base64Data,
+                  },
+                ]);
+              }
+              // Broadcast frame to peers
+              if (
+                videoChannelRef.current?.state === 'SUBSCRIBED' &&
+                localParticipantUid
+              ) {
+                videoChannelRef.current.send({
+                  type: 'broadcast',
+                  event: 'frame',
+                  payload: { uid: localParticipantUid, frame: base64Data },
+                });
+              }
             }
           },
           'image/jpeg',
-          0.8,
+          0.5, // Lower quality to reduce payload size
         );
-      }, 1000); // 1 FPS
+      }, 100); // 10 FPS
     };
 
     const stopVideoStreaming = () => {
@@ -263,7 +296,7 @@ export function useLiveApi({
     return () => {
       stopVideoStreaming();
     };
-  }, [connected, videoEnabled, client]);
+  }, [connected, videoEnabled, client, localParticipantUid]);
 
   const toggleVideo = useCallback(async () => {
     if (videoEnabled) {

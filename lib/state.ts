@@ -203,6 +203,7 @@ export const useParticipantStore = create<{
   localParticipantUid: string | null;
   speakingParticipantUid: string | null;
   pinnedParticipantUid: string | null;
+  remoteVideoFrames: Record<string, string>;
   setPinnedParticipant: (uid: string | null) => void;
   setSpeakingParticipant: (uid: string | null) => void;
   setLocalParticipantUid: (uid: string | null) => void;
@@ -220,12 +221,15 @@ export const useParticipantStore = create<{
   setHandRaised: (uid: string, isHandRaised: boolean) => Promise<void>;
   setLanguage: (uid: string, language: string) => Promise<void>;
   setAllMuted: (isMuted: boolean) => Promise<void>;
+  setRemoteVideoFrame: (uid: string, frame: string) => void;
+  clearRemoteVideoFrame: (uid: string) => void;
 }>((set, get) => ({
   participants: [],
   localParticipant: null,
   localParticipantUid: null,
   speakingParticipantUid: null,
   pinnedParticipantUid: null,
+  remoteVideoFrames: {},
   setPinnedParticipant: uid => set({ pinnedParticipantUid: uid }),
   setSpeakingParticipant: (uid: string | null) =>
     set({ speakingParticipantUid: uid }),
@@ -274,6 +278,9 @@ export const useParticipantStore = create<{
     set({ participants });
   },
   addOrUpdateParticipant: (participant: Omit<Participant, 'isLocal'>) => {
+    if (participant.isCameraOff) {
+      get().clearRemoteVideoFrame(participant.uid);
+    }
     set(state => {
       const isForLocalUser = participant.uid === state.localParticipantUid;
       const finalParticipant = { ...participant, isLocal: isForLocalUser };
@@ -296,6 +303,7 @@ export const useParticipantStore = create<{
     });
   },
   removeParticipant: (uid: string) => {
+    get().clearRemoteVideoFrame(uid);
     set(state => ({
       participants: state.participants.filter(p => p.uid !== uid),
     }));
@@ -380,5 +388,20 @@ export const useParticipantStore = create<{
       console.error('Error muting/unmuting all participants:', error);
       // If there's an error, the realtime subscription will eventually correct the state.
     }
+  },
+  setRemoteVideoFrame: (uid: string, frame: string) => {
+    set(state => ({
+      remoteVideoFrames: {
+        ...state.remoteVideoFrames,
+        [uid]: frame,
+      },
+    }));
+  },
+  clearRemoteVideoFrame: (uid: string) => {
+    set(state => {
+      const newFrames = { ...state.remoteVideoFrames };
+      delete newFrames[uid];
+      return { remoteVideoFrames: newFrames };
+    });
   },
 }));

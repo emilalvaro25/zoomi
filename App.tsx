@@ -61,6 +61,8 @@ function AppContent() {
     addOrUpdateParticipant,
     removeParticipant,
     setLocalParticipantUid,
+    setRemoteVideoFrame,
+    clearRemoteVideoFrame,
   } = useParticipantStore();
   const meetingId = useUI(state => state.meetingId);
 
@@ -159,6 +161,9 @@ function AppContent() {
             payload.eventType === 'UPDATE'
           ) {
             const p = payload.new;
+            if (p.is_camera_off) {
+              clearRemoteVideoFrame(p.uid);
+            }
             addOrUpdateParticipant({
               uid: p.uid,
               name:
@@ -186,7 +191,26 @@ function AppContent() {
     setParticipants,
     addOrUpdateParticipant,
     removeParticipant,
+    clearRemoteVideoFrame,
   ]);
+
+  // Handle video stream broadcast
+  useEffect(() => {
+    if (!meetingId) return;
+    const videoChannel = supabase.channel(`video-stream-${meetingId}`);
+    videoChannel
+      .on('broadcast', { event: 'frame' }, ({ payload }) => {
+        // Don't need to render our own stream this way
+        if (payload.uid !== localParticipant?.uid) {
+          setRemoteVideoFrame(payload.uid, payload.frame);
+        }
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(videoChannel);
+    };
+  }, [meetingId, localParticipant?.uid, setRemoteVideoFrame]);
 
   // Handle sending own transcription to DB for all participants
   useEffect(() => {

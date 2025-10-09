@@ -17,6 +17,7 @@ const ParticipantTile: React.FC<ParticipantTileProps> = ({ participant }) => {
     speakingParticipantUid,
     pinnedParticipantUid,
     setPinnedParticipant,
+    remoteVideoFrames,
   } = useParticipantStore();
 
   const isVideoOn = !participant.isCameraOff;
@@ -29,22 +30,39 @@ const ParticipantTile: React.FC<ParticipantTileProps> = ({ participant }) => {
   };
 
   const renderContent = () => {
-    if (isVideoOn) {
-      if (participant.isLocal) {
-        return <WebcamView />;
-      }
-      // Placeholder for remote participant's video stream
-      return (
+    // Local participant uses WebcamView with <video> element for smooth playback
+    if (participant.isLocal) {
+      return isVideoOn ? (
+        <WebcamView />
+      ) : (
         <div className="participant-placeholder">
-          <span className="avatar-icon icon">videocam</span>
-          <p className="placeholder-text">Remote video on</p>
+          <span className="avatar-icon icon">videocam_off</span>
         </div>
       );
     }
-    // Camera is off for anyone.
+
+    // Remote participants use <img> for received frames
+    const frameData = remoteVideoFrames[participant.uid];
+
+    if (isVideoOn && frameData) {
+      return (
+        <img
+          src={`data:image/jpeg;base64,${frameData}`}
+          className="remote-video-frame"
+          alt={`${participant.name}'s video`}
+        />
+      );
+    }
+
+    // Placeholder if camera is off or no frame received yet
     return (
       <div className="participant-placeholder">
-        <span className="avatar-icon icon">videocam_off</span>
+        <span className="avatar-icon icon">
+          {isVideoOn ? 'videocam' : 'videocam_off'}
+        </span>
+        {isVideoOn && (
+          <p className="placeholder-text">Waiting for video...</p>
+        )}
       </div>
     );
   };
