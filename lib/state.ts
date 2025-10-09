@@ -19,7 +19,12 @@ import {
 import { supabase } from './supabase';
 import { getInitialVoices } from './voices';
 
-export type TranslationMode = 'off' | 'incoming' | 'outgoing' | 'bidirectional';
+export type TranslationMode =
+  | 'off'
+  | 'incoming'
+  | 'outgoing'
+  | 'bidirectional'
+  | 'system';
 export type VideoQuality = 'low' | 'medium' | 'high';
 
 /**

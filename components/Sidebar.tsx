@@ -303,13 +303,18 @@ export default function Sidebar() {
                   }
                 >
                   <option value="bidirectional">
-                    Bidirectional (Mic & Speakers)
+                    My Microphone & Others' Speech
                   </option>
-                  <option value="incoming">Incoming (from Speakers)</option>
-                  <option value="outgoing">Outgoing (from Mic)</option>
+                  <option value="incoming">Only Others' Speech</option>
+                  <option value="outgoing">Only My Microphone</option>
+                  <option value="system">System Audio (Experimental)</option>
                   <option value="off">Off</option>
                 </select>
               </label>
+              <p className="description">
+                "System Audio" translates audio from your computer (e.g., a
+                video). Use with headphones to prevent echo.
+              </p>
               <label>
                 Translation Volume
                 <input

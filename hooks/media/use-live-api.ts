@@ -41,6 +41,7 @@ import {
 import { supabase } from '@/lib/supabase';
 import { RealtimeChannel } from '@supabase/supabase-js';
 import { cancel as cancelTTS } from '../../lib/tts';
+import { AudioRecorder } from '@/lib/audio-recorder';
 
 export type UseLiveApiResults = {
   client: GenAILiveClient;
@@ -102,15 +103,21 @@ export function useLiveApi({
 }: {
   apiKey: string;
 }): UseLiveApiResults {
-  const { model, translationVolume, isTranslationEnabled, videoQuality } =
-    useSettings();
+  const {
+    model,
+    translationVolume,
+    isTranslationEnabled,
+    videoQuality,
+    translationMode,
+  } = useSettings();
   const client = useMemo(
     () => new GenAILiveClient(apiKey, model),
     [apiKey, model],
   );
 
   const audioStreamerRef = useRef<AudioStreamer | null>(null);
-  const { localParticipantUid, setCameraOff, setScreenSharing } = useParticipantStore();
+  const { localParticipantUid, setCameraOff, setScreenSharing } =
+    useParticipantStore();
   const meetingId = useUI(state => state.meetingId);
 
   const [volume, setVolume] = useState(0);
@@ -125,6 +132,9 @@ export function useLiveApi({
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const frameIntervalRef = useRef<number | null>(null);
   const videoChannelRef = useRef<RealtimeChannel | null>(null);
+
+  const systemAudioRecorderRef = useRef<AudioRecorder | null>(null);
+  const systemAudioStreamRef = useRef<MediaStream | null>(null);
 
   const isLocalVideoActive = videoEnabled || isScreenSharing;
 
@@ -234,6 +244,88 @@ export function useLiveApi({
       client.off('toolcall', onToolCall);
     };
   }, [client]);
+
+  // Effect to manage system audio capture for translation
+  useEffect(() => {
+    const startSystemAudioCapture = async () => {
+      try {
+        const displayStream = await navigator.mediaDevices.getDisplayMedia({
+          video: true, // Required to get the permission prompt for audio
+          // FIX: `suppressLocalAudioPlayback` is a valid property for getDisplayMedia's audio options,
+          // but it may not be present in the default TypeScript DOM library types. Casting to `any`
+          // bypasses the type check.
+          audio: {
+            suppressLocalAudioPlayback: false,
+          } as any,
+        });
+
+        if (displayStream.getAudioTracks().length > 0) {
+          systemAudioStreamRef.current = new MediaStream(
+            displayStream.getAudioTracks(),
+          );
+          systemAudioRecorderRef.current = new AudioRecorder();
+
+          const onData = (base64: string) => {
+            client.sendRealtimeInput([
+              {
+                mimeType: 'audio/pcm;rate=16000',
+                data: base64,
+              },
+            ]);
+          };
+          systemAudioRecorderRef.current.on('data', onData);
+          await systemAudioRecorderRef.current.start(
+            systemAudioStreamRef.current,
+          );
+
+          // When user stops sharing via browser UI
+          displayStream.getTracks().forEach(track => {
+            track.onended = () => {
+              stopSystemAudioCapture();
+              // Revert to microphone if applicable
+              useSettings
+                .getState()
+                .setTranslationMode(
+                  useSettings.getState().translationMode === 'system'
+                    ? 'bidirectional'
+                    : useSettings.getState().translationMode,
+                );
+            };
+          });
+        } else {
+          console.warn(
+            'User did not grant permission for system audio capture.',
+          );
+          // Revert if no audio track was provided
+          useSettings.getState().setTranslationMode('bidirectional');
+        }
+      } catch (err) {
+        console.error('Error starting system audio capture:', err);
+        useSettings.getState().setTranslationMode('bidirectional');
+      }
+    };
+
+    const stopSystemAudioCapture = () => {
+      if (systemAudioRecorderRef.current) {
+        systemAudioRecorderRef.current.stop();
+        systemAudioRecorderRef.current = null;
+      }
+      if (systemAudioStreamRef.current) {
+        systemAudioStreamRef.current.getTracks().forEach(track => track.stop());
+        systemAudioStreamRef.current = null;
+      }
+    };
+
+    if (connected && translationMode === 'system') {
+      startSystemAudioCapture();
+    } else {
+      stopSystemAudioCapture();
+    }
+
+    return () => {
+      stopSystemAudioCapture();
+    };
+  }, [translationMode, connected, client]);
 
   // Effect to manage the Supabase channel for broadcasting video
   useEffect(() => {
@@ -407,7 +499,7 @@ export function useLiveApi({
         // Add listener to stop sharing when browser UI is used
         stream.getVideoTracks()[0].onended = () => {
           if (videoRef.current && videoRef.current.srcObject) {
-             (videoRef.current.srcObject as MediaStream)
+            (videoRef.current.srcObject as MediaStream)
               .getTracks()
               .forEach(track => track.stop());
             videoRef.current.srcObject = null;
@@ -431,48 +523,62 @@ export function useLiveApi({
   }, [isScreenSharing, videoEnabled, localParticipantUid, setScreenSharing]);
 
   useEffect(() => {
-    if (videoEnabled) {
-      let isCancelled = false;
-      const constraints = { video: VIDEO_QUALITY_CONSTRAINTS[videoQuality] };
+    // This effect exclusively manages the camera stream.
+    // The screen sharing logic toggles `videoEnabled` to control the camera.
 
-      // Stop previous tracks before getting new ones
-      if (videoRef.current && videoRef.current.srcObject) {
-        (videoRef.current.srcObject as MediaStream)
-          .getTracks()
-          .forEach(track => track.stop());
-      }
-
-      navigator.mediaDevices
-        .getUserMedia(constraints)
-        .then(stream => {
-          if (!isCancelled && videoRef.current) {
-            videoRef.current.srcObject = stream;
-            if (localParticipantUid) {
-              setCameraOff(localParticipantUid, false);
-            }
-          }
-        })
-        .catch(err => {
-          console.error('Error accessing webcam:', err);
-          setVideoEnabled(false); // Toggle off on error
-        });
-
-      return () => {
-        isCancelled = true;
-      };
-    } else {
-      // Turn off video (only if not screen sharing)
-      if (!isScreenSharing && videoRef.current && videoRef.current.srcObject) {
-        (videoRef.current.srcObject as MediaStream)
-          .getTracks()
-          .forEach(track => track.stop());
-        videoRef.current.srcObject = null;
-      }
+    if (!videoEnabled) {
+      // If video is disabled, the cleanup function from the previous run
+      // has already stopped the stream. We just ensure the DB state is correct.
       if (localParticipantUid) {
         setCameraOff(localParticipantUid, true);
       }
+      return;
     }
-  }, [videoEnabled, videoQuality, localParticipantUid, setCameraOff, isScreenSharing]);
+
+    let stream: MediaStream | null = null;
+    let isCancelled = false;
+
+    const constraints = { video: VIDEO_QUALITY_CONSTRAINTS[videoQuality] };
+
+    navigator.mediaDevices
+      .getUserMedia(constraints)
+      .then(s => {
+        if (isCancelled) {
+          s.getTracks().forEach(track => track.stop());
+          return;
+        }
+        stream = s;
+        if (videoRef.current) {
+          videoRef.current.srcObject = stream;
+        }
+        if (localParticipantUid) {
+          setCameraOff(localParticipantUid, false);
+        }
+      })
+      .catch(err => {
+        if (!isCancelled) {
+          console.error('Error accessing webcam:', (err as Error).message);
+          setVideoEnabled(false);
+        }
+      });
+
+    // This cleanup runs when dependencies change or the component unmounts.
+    return () => {
+      isCancelled = true;
+      if (stream) {
+        stream.getTracks().forEach(track => track.stop());
+        if (videoRef.current && videoRef.current.srcObject === stream) {
+          videoRef.current.srcObject = null;
+        }
+      }
+    };
+  }, [
+    videoEnabled,
+    videoQuality,
+    localParticipantUid,
+    setCameraOff,
+    setVideoEnabled,
+  ]);
 
   // Cleanup on unmount
   useEffect(() => {

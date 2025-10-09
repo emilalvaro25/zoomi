@@ -55,23 +55,36 @@ export class AudioRecorder {
 
   constructor(public sampleRate = 16000) {}
 
-  async start() {
-    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+  async start(inputStream?: MediaStream) {
+    if (
+      !inputStream &&
+      (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia)
+    ) {
       throw new Error('Could not request user media');
     }
 
     this.starting = new Promise(async (resolve, reject) => {
-      this.stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      this.stream =
+        inputStream ||
+        (await navigator.mediaDevices.getUserMedia({ audio: true }));
+
       this.audioContext = await audioContext({ sampleRate: this.sampleRate });
       this.source = this.audioContext.createMediaStreamSource(this.stream);
 
       const workletName = 'audio-recorder-worklet';
       const src = createWorketFromSrc(workletName, AudioRecordingWorklet);
 
-      await this.audioContext.audioWorklet.addModule(src);
+      try {
+        await this.audioContext.audioWorklet.addModule(src);
+      } catch (e) {
+        // Handle case where module is already added
+        if (!(e instanceof DOMException && e.name === 'InvalidStateError')) {
+          throw e;
+        }
+      }
       this.recordingWorklet = new AudioWorkletNode(
         this.audioContext,
-        workletName
+        workletName,
       );
 
       this.recordingWorklet.port.onmessage = async (ev: MessageEvent) => {
@@ -88,9 +101,15 @@ export class AudioRecorder {
 
       // vu meter worklet
       const vuWorkletName = 'vu-meter';
-      await this.audioContext.audioWorklet.addModule(
-        createWorketFromSrc(vuWorkletName, VolMeterWorket)
-      );
+      try {
+        await this.audioContext.audioWorklet.addModule(
+          createWorketFromSrc(vuWorkletName, VolMeterWorket),
+        );
+      } catch (e) {
+        if (!(e instanceof DOMException && e.name === 'InvalidStateError')) {
+          throw e;
+        }
+      }
       this.vuWorklet = new AudioWorkletNode(this.audioContext, vuWorkletName);
       this.vuWorklet.port.onmessage = (ev: MessageEvent) => {
         // FIX: Changed this.emit to this.emitter.emit
@@ -102,6 +121,7 @@ export class AudioRecorder {
       resolve();
       this.starting = null;
     });
+    return this.starting;
   }
 
   stop() {

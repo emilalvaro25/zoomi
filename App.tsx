@@ -139,7 +139,7 @@ function AppContent() {
         .eq('meeting_id', meetingId);
 
       if (error) {
-        console.error('Error fetching participants:', error);
+        console.error('Error fetching participants:', error.message);
         return;
       }
       if (data) {

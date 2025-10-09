@@ -54,8 +54,12 @@ function ControlTray({ children }: ControlTrayProps) {
     setCountdown,
   } = useUI();
   const { effect, setEffect } = useCameraState();
-  const { isTranslationEnabled, toggleTranslation, isSyncedTranslation } =
-    useSettings();
+  const {
+    isTranslationEnabled,
+    toggleTranslation,
+    isSyncedTranslation,
+    translationMode,
+  } = useSettings();
   const {
     setMuted: setParticipantMuted,
     participants,
@@ -210,7 +214,11 @@ function ControlTray({ children }: ControlTrayProps) {
         },
       ]);
     };
-    if (connected && !muted && audioRecorder) {
+    // Only use the microphone recorder if the mode includes mic input
+    const useMicRecorder =
+      translationMode === 'outgoing' || translationMode === 'bidirectional';
+
+    if (connected && !muted && audioRecorder && useMicRecorder) {
       audioRecorder.on('data', onData);
       audioRecorder.start();
     } else {
@@ -219,7 +227,7 @@ function ControlTray({ children }: ControlTrayProps) {
     return () => {
       audioRecorder.off('data', onData);
     };
-  }, [connected, client, muted, audioRecorder]);
+  }, [connected, client, muted, audioRecorder, translationMode]);
 
   const handleMicClick = () => {
     if (connected && !isSpeakerOnCooldown) {
@@ -306,6 +314,12 @@ function ControlTray({ children }: ControlTrayProps) {
   );
 
   const isHost = localParticipant?.role === 'host';
+  const isMicDisabled =
+    !connected ||
+    isSpeakerOnCooldown ||
+    translationMode === 'incoming' ||
+    translationMode === 'system' ||
+    translationMode === 'off';
 
   return (
     <section className={cn('control-tray', { 'full-screen': isFullScreen })}>
@@ -314,9 +328,9 @@ function ControlTray({ children }: ControlTrayProps) {
           className={cn('action-button mic-button')}
           onClick={handleMicClick}
           title={micButtonTitle}
-          disabled={!connected || isSpeakerOnCooldown}
+          disabled={isMicDisabled}
         >
-          {muted ? (
+          {muted || isMicDisabled ? (
             <span className="material-symbols-outlined filled">mic_off</span>
           ) : (
             <span className="material-symbols-outlined filled">mic</span>

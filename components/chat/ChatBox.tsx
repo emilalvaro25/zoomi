@@ -26,7 +26,7 @@ const ChatBox: React.FC = () => {
         .order('created_at', { ascending: true });
 
       if (error) {
-        console.error('Error fetching messages:', error);
+        console.error('Error fetching messages:', error.message);
       } else if (data) {
         setMessages(data);
       }
